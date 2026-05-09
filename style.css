@@ -1267,3 +1267,47 @@ textarea:focus, input:focus { outline: none; border-color: var(--info); }
 .burst-emoji { font-size: 60px; margin-bottom: 8px; }
 .burst-title { font-size: 18px; font-weight: 900; color: #c47e1f; margin-bottom: 4px; }
 .burst-msg { font-size: 13px; color: var(--text); font-weight: 800; }
+
+/* WHY card — purpose statement before each practice */
+.why-card {
+  background: linear-gradient(135deg, #f5e8ff 0%, #e9d4ff 100%);
+  border: 2px solid var(--purple);
+  border-bottom-width: 3px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  position: relative;
+}
+.why-card::before {
+  content: '🎯';
+  position: absolute;
+  font-size: 50px;
+  right: 6px;
+  bottom: -6px;
+  opacity: 0.12;
+  pointer-events: none;
+}
+.why-label {
+  font-size: 10px;
+  color: var(--purple-dark);
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  margin-bottom: 6px;
+}
+.why-text {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 800;
+  line-height: 1.6;
+  position: relative;
+  z-index: 1;
+}
+.why-impact {
+  font-size: 11px;
+  color: var(--purple-dark);
+  font-weight: 900;
+  margin-top: 6px;
+  letter-spacing: 0.3px;
+  position: relative;
+  z-index: 1;
+}

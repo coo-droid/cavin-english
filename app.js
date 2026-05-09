@@ -12,10 +12,32 @@ const App = {
     });
     // Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=4').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=5').catch(() => {});
     }
     // 起動時にアチーブメントチェック
     setTimeout(() => this.checkAchievements(), 800);
+    // PWA + iOSマイク警告
+    this.checkMicEnvironment();
+  },
+
+  checkMicEnvironment() {
+    const warning = document.getElementById('micWarning');
+    if (!warning) return;
+    // PWAホーム画面でiOSの場合、マイクが使えないことが多い
+    if (Speech.isStandalone() && Speech.isIOS()) {
+      // 既に警告閉じ済みなら出さない
+      if (localStorage.getItem('micWarningDismissed') === '1') return;
+      warning.style.display = 'block';
+      warning.innerHTML = `
+        <div style="background: linear-gradient(135deg, #fff7e0, #ffe9a8); border: 2px solid var(--accent); border-bottom-width: 3px; border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; position: relative;">
+          <div style="font-size: 11px; color: var(--accent-dark); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px;">⚠️ MIC NOTICE</div>
+          <div style="font-size: 12px; color: var(--text); font-weight: 800; line-height: 1.5;">
+            録音と発音チェックは<b>Safariで開く</b>と動きます。ホーム画面アイコンからだとiOSが録音をブロックします。
+          </div>
+          <button onclick="localStorage.setItem('micWarningDismissed','1'); this.parentElement.parentElement.style.display='none';" style="margin-top: 8px; background: var(--accent); color: #fff; border: none; border-bottom: 2px solid var(--accent-shadow); padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 900; font-family: inherit;">OK, GOT IT</button>
+        </div>
+      `;
+    }
   },
 
   toast(msg, type) {

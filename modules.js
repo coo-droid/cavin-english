@@ -5,6 +5,11 @@ const Modules = {
   declaration() {
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">MORNING DECLARATION</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">${PURPOSE.declaration.why}</div>
+        <div class="why-impact">${PURPOSE.declaration.impact}</div>
+      </div>
       <div class="declaration">"${DECLARATION}"</div>
       <button class="btn-primary" onclick="Speech.speak('${DECLARATION}', 0.85)">🔊 LISTEN</button>
       <button class="btn-primary btn-success" onclick="Storage.markDone('declaration'); App.awardXP(5, event); App.closeModal();">✓ I DECLARED (+5 XP)</button>
@@ -16,6 +21,11 @@ const Modules = {
     const hookEsc = HOOK.replace(/`/g, "'");
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">SELF-INTRO HOOK</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">${PURPOSE.hook.why}</div>
+        <div class="why-impact">${PURPOSE.hook.impact}</div>
+      </div>
       <div class="hook-text">${HOOK.replace(/\n/g, '<br>')}</div>
       <div style="text-align:center; font-size:11px; color: var(--text-dim); margin-bottom:14px;">REPEAT 3 TIMES</div>
       <div class="btn-row-3">
@@ -35,6 +45,11 @@ const Modules = {
     const aEsc = card.a.replace(/`/g, "'");
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">${title} · ${dayNames[new Date().getDay()]}</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">${PURPOSE.flash.why}</div>
+        <div class="why-impact">${PURPOSE.flash.impact}</div>
+      </div>
       <div class="flip-card" onclick="this.querySelector('.flip-inner').classList.toggle('flipped')">
         <div class="flip-inner">
           <div class="flip-front">
@@ -92,6 +107,11 @@ const Modules = {
     const phrase = DAILY_PHRASE[new Date().getDay()];
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">TODAY'S PHRASE</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">${PURPOSE.phraseToday.why}</div>
+        <div class="why-impact">${PURPOSE.phraseToday.impact}</div>
+      </div>
       <div class="declaration" style="font-style:normal; font-size:24px;">"${phrase}"</div>
       <div style="text-align:center; font-size:11px; color: var(--text-dim); margin-bottom:14px;">SAY IT 3 TIMES</div>
       <button class="btn-primary" onclick="Speech.speak(\`${phrase}\`, 0.9)">🔊 LISTEN</button>
@@ -103,6 +123,49 @@ const Modules = {
 
   // ========== シャドーイングHub ==========
   shadowingHub() {
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">SHADOWING SESSION</div>
+
+      <!-- なぜシャドーイングをやるか -->
+      <div class="why-card">
+        <div class="why-label">🎯 WHY SHADOWING</div>
+        <div class="why-text">${PURPOSE.shadowing.why}</div>
+        <div class="why-impact">${PURPOSE.shadowing.impact}</div>
+      </div>
+
+      <!-- セッション内容説明 -->
+      <div style="background: linear-gradient(135deg, #fff7e0, #ffeec2); border: 2px solid var(--accent); border-bottom-width: 3px; border-radius: 16px; padding: 16px; margin-bottom: 14px;">
+        <div style="font-size: 11px; color: var(--accent-dark); font-weight: 900; letter-spacing: 1px; margin-bottom: 8px;">📦 TODAY'S SESSION</div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 6px;">
+          <span style="background: var(--info); color: #fff; font-size: 11px; font-weight: 900; padding: 4px 10px; border-radius: 8px; border-bottom: 2px solid var(--info-shadow);">SHORT × 2</span>
+          <span style="font-size: 12px; color: var(--text-soft); font-weight: 800;">50 reps each</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <span style="background: var(--purple); color: #fff; font-size: 11px; font-weight: 900; padding: 4px 10px; border-radius: 8px; border-bottom: 2px solid var(--purple-dark);">LONG × 1</span>
+          <span style="font-size: 12px; color: var(--text-soft); font-weight: 800;">20 reps</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-soft); margin-top: 10px; font-weight: 700;">→ Auto-selected based on your recent practice. Avoiding repeats.</div>
+      </div>
+
+      <button class="btn-primary btn-pink" onclick="Shadowing.startSession()">🚀 START TODAY'S SESSION</button>
+      <button class="btn-primary btn-purple" onclick="Shadowing.customStart()">✏️ CUSTOM TEXT</button>
+
+      <div class="section-title" style="margin: 18px 0 8px;">JUMP TO SPECIFIC PHRASE</div>
+      <div style="font-size: 11px; color: var(--text-soft); font-weight: 800; margin-bottom: 8px;">All practice library — for free practice anytime.</div>
+      ${SHADOW_BANK.short.slice(0, 5).map((s) => `
+        <div class="vocab-item" onclick="Shadowing.start(\`${s.text.replace(/`/g,"'")}\`, 1);">
+          <div style="flex:1; min-width:0;">
+            <div class="vocab-word" style="font-size:14px;">${s.text}</div>
+            <div class="vocab-jp">SHORT · 50×</div>
+          </div>
+          <div class="vocab-due new">START</div>
+        </div>
+      `).join('')}
+      <button class="btn-secondary" onclick="Modules.shadowingFullList()">▼ SHOW ALL ${SHADOW_BANK.short.length + SHADOW_BANK.long.length} PHRASES</button>
+    `;
+  },
+
+  shadowingFullList() {
     const shortList = SHADOW_BANK.short.map((s) => `
       <div class="vocab-item" onclick="Shadowing.start(\`${s.text.replace(/`/g,"'")}\`, 1);">
         <div style="flex:1; min-width:0;">
@@ -122,15 +185,11 @@ const Modules = {
       </div>
     `).join('');
     document.getElementById('modalBody').innerHTML = `
-      <div class="modal-title">SHADOWING DRILL</div>
-      <div style="font-size:13px; color: var(--text-soft); margin-bottom: 14px; line-height:1.6; font-weight:800;">
-        Pick a sentence. Repeat until your mouth knows it.<br>
-        Short = 50×  ·  Long = 20×
-      </div>
-      <button class="btn-primary btn-purple" onclick="Shadowing.customStart()">✏️ CUSTOM TEXT</button>
-      <div class="section-title" style="margin: 14px 0 8px;">📝 SHORT SENTENCES</div>
+      <div class="modal-title">ALL SHADOWING PHRASES</div>
+      <button class="btn-secondary" onclick="Modules.shadowingHub()">← BACK TO SESSION</button>
+      <div class="section-title" style="margin: 14px 0 8px;">📝 SHORT (${SHADOW_BANK.short.length})</div>
       ${shortList}
-      <div class="section-title" style="margin: 18px 0 8px;">📜 LONG PASSAGES</div>
+      <div class="section-title" style="margin: 18px 0 8px;">📜 LONG (${SHADOW_BANK.long.length})</div>
       ${longList}
     `;
   },
@@ -158,6 +217,11 @@ const Modules = {
     }).join('');
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">VOCABULARY  ·  ${due} DUE</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY VOCABULARY</div>
+        <div class="why-text">${PURPOSE.vocab.why}</div>
+        <div class="why-impact">${PURPOSE.vocab.impact}</div>
+      </div>
       <div class="vocab-tab">${tabs}</div>
       ${due > 0 ? `<button class="btn-primary" onclick="App.openModule('vocab-review')">📖 REVIEW DUE (${due})</button>` : ''}
       <button class="btn-secondary" onclick="App.openModule('vocab-add')">+ ADD NEW</button>
@@ -294,6 +358,11 @@ const Modules = {
     `).join('');
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">SCENE PHRASES</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY SCENES</div>
+        <div class="why-text">${PURPOSE.scenes.why}</div>
+        <div class="why-impact">${PURPOSE.scenes.impact}</div>
+      </div>
       ${cards}
     `;
   },
@@ -390,7 +459,12 @@ const Modules = {
   voiceRoleplay() {
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">VOICE ROLEPLAY</div>
-      <div style="font-size:13px; color: var(--text-dim); margin-bottom: 14px; line-height:1.6;">
+      <div class="why-card">
+        <div class="why-label">🎯 WHY VOICE ROLEPLAY</div>
+        <div class="why-text">${PURPOSE.voiceRoleplay.why}</div>
+        <div class="why-impact">${PURPOSE.voiceRoleplay.impact}</div>
+      </div>
+      <div style="font-size:13px; color: var(--text-soft); margin-bottom: 14px; line-height:1.6; font-weight: 800;">
         Practice with built-in scenarios.<br>
         Tap mic, speak in English, get a response.
       </div>
@@ -492,6 +566,11 @@ const Modules = {
     const existing = Storage.get('diary_' + today, { a:'', b:'', c:'' });
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">3-LINE DIARY · ${today}</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY DIARY</div>
+        <div class="why-text">${PURPOSE.diary.why}</div>
+        <div class="why-impact">${PURPOSE.diary.impact}</div>
+      </div>
       <div class="label">① WHAT I DID TODAY</div>
       <textarea id="d_a" placeholder="What I checked off...">${existing.a}</textarea>
       <div class="label">② WHAT WORKED · INSIGHT</div>
@@ -519,8 +598,13 @@ const Modules = {
   emergency() {
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">2-MINUTE EMERGENCY MODE</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS MODE</div>
+        <div class="why-text">${PURPOSE.emergency.why}</div>
+        <div class="why-impact">${PURPOSE.emergency.impact}</div>
+      </div>
       <div style="font-size:14px; line-height:1.8; padding:8px 0 18px;">
-        <div style="color:var(--gold); margin-bottom:10px;">FOR BUSY DAYS — PRESERVE STREAK</div>
+        <div style="color: var(--accent-dark); margin-bottom:10px; font-weight: 900;">FOR BUSY DAYS — PRESERVE STREAK</div>
         <div style="color:var(--text); font-size:14px; line-height:1.8;">
           ① Speak aloud 3x:<br>
           <span style="color:var(--gold); font-style:italic;">"Japan grows some of the world's most beautiful flowers. I'm Zacky. I'm here to change that."</span><br><br>
@@ -575,6 +659,11 @@ const Modules = {
     `).join('');
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">JAKARTA · DAY TIMELINE</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY TIMELINE</div>
+        <div class="why-text">${PURPOSE.timeline.why}</div>
+        <div class="why-impact">${PURPOSE.timeline.impact}</div>
+      </div>
       <div style="background: linear-gradient(135deg, #fff0f4, #ffe0ec); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; text-align: center;">
         <div style="font-size: 11px; color: var(--primary); font-weight: 900; letter-spacing: 1.5px; margin-bottom: 4px;">COUNTDOWN</div>
         <div style="font-size: 32px; font-weight: 900; color: var(--primary-dark); line-height: 1;">${days >= 0 ? days : '✓'} <span style="font-size: 14px;">${days >= 0 ? 'days to go' : 'completed'}</span></div>
@@ -621,6 +710,11 @@ const Modules = {
 
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">WEEKLY REPORT</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY WEEKLY REPORT</div>
+        <div class="why-text">${PURPOSE.weeklyReport.why}</div>
+        <div class="why-impact">${PURPOSE.weeklyReport.impact}</div>
+      </div>
       <div class="burst-card">
         <div class="burst-emoji">📈</div>
         <div class="burst-title">${summary}</div>

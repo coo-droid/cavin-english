@@ -164,48 +164,72 @@ const SCENES = {
   }
 };
 
-// シャドーイング教材（短文・長文）
+// シャドーイング教材（短文・長文）— 各文に「なぜこれを練習するか」のwhyを付与
 const SHADOW_BANK = {
   short: [
-    { text: "What brings you here today?", level: 1 },
-    { text: "It's a pleasure to meet you.", level: 1 },
-    { text: "Tell me more about that.", level: 1 },
-    { text: "I'd love to hear the story.", level: 1 },
-    { text: "Thank you for your time.", level: 1 },
-    { text: "What matters most to you?", level: 1 },
-    { text: "May I ask a question?", level: 1 },
-    { text: "Let's continue this conversation.", level: 1 },
-    { text: "I'm Zacky, partner at CAVIN.", level: 1 },
-    { text: "Japan grows the world's finest flowers.", level: 1 },
-    { text: "Almost as fresh as if you picked them yourself.", level: 1 },
-    { text: "Nobody else can do this.", level: 1 },
-    { text: "Quality, not volume.", level: 1 },
-    { text: "Let me see what's possible.", level: 1 },
-    { text: "I appreciate your honesty.", level: 1 },
+    { text: "What brings you here today?", why: "初対面で相手を喋らせる魔法の一言。商談はこれで主導権を渡す。" },
+    { text: "It's a pleasure to finally meet you.", why: "対面挨拶の品格。'finally'を入れると相手を立てられる。" },
+    { text: "Tell me more about that.", why: "富裕層は自分の話を聞く人を信頼する。沈黙の代わりにこれ。" },
+    { text: "I'd love to hear the story behind that.", why: "相手の物語を引き出す。商談を雑談から深い関係へ昇格させる。" },
+    { text: "Thank you for making time.", why: "富裕層への敬意。会えたことそのものへの感謝で開く。" },
+    { text: "What matters most to you?", why: "押し売りせず、相手のニーズを引き出す質問。" },
+    { text: "May I ask a question?", why: "踏み込む前のワンクッション。失礼にならない。" },
+    { text: "Let's continue this conversation.", why: "別れ際の定番。次に繋げる魔法のフレーズ。" },
+    { text: "I'm Zacky, partner at CAVIN.", why: "自分の名前と立場を一息で言える練習。商談の最初の3秒。" },
+    { text: "Japan grows the world's finest flowers.", why: "あなたのHookの核。これが言えなければ何も始まらない。" },
+    { text: "Almost as fresh as if you picked them yourself.", why: "FedEx連携の強みを体感で伝える殺し文句。" },
+    { text: "Nobody else can do this.", why: "断言する勇気を体に入れる。富裕層は自信ある人を信頼する。" },
+    { text: "Quality, not volume.", why: "ラグジュアリーの哲学を一言で。あなたのスタンスが伝わる。" },
+    { text: "Let me see what's possible.", why: "即決を避け、誠実さを示す。価格交渉での切り返し。" },
+    { text: "I appreciate your honesty.", why: "相手の本音を歓迎する姿勢。信頼を一段深める。" },
+    { text: "What would make this a yes for you?", why: "営業の超能力。相手の障害を聞き出して扉を開く。" },
+    { text: "I'd rather know now.", why: "拒否を恐れない誠実さ。時間を尊重するプロの姿勢。" },
+    { text: "Selamat pagi, terima kasih.", why: "現地語で開く敬意。インドネシア人富裕層に必ず効く。" },
+    { text: "I came to find partners, not customers.", why: "売り手ではなくビジョン共有者として立つ。" },
+    { text: "I'd love to send you something — no business attached.", why: "見返りなしの贈与。富裕層の心を最も動かす一言。" }
   ],
   long: [
     {
       text: "Japan grows some of the most beautiful flowers in the world. But almost no one outside Japan knows it. I'm Zacky, and I'm here to change that.",
-      level: 2
+      why: "あなたの3分自己紹介の最初の20秒。商談の運命を決めるHook。淀みなく言えるまで体に染み込ませる。"
     },
     {
       text: "We've built Japan's most direct grower-to-customer logistics network. Through our FedEx partnership, we deliver internationally as fast as we deliver within Japan.",
-      level: 2
+      why: "CAVINの差別化ポイント。なぜ高くても買う価値があるのかの根拠。これを淀みなく言えれば信頼が生まれる。"
     },
     {
       text: "Indonesia, to me, is one of the most exciting markets in the world. The energy here, the love of beauty, the way people celebrate life — it speaks the same language as Japanese flowers.",
-      level: 2
+      why: "「なぜインドネシアか」を聞かれた時の本命答え。お世辞でなく観察として語る練習。"
     },
     {
       text: "I'm not here to sell. I'm here to share. To meet people who appreciate craft, story, and quiet beauty — and to see if our worlds can grow together.",
-      level: 2
+      why: "売り込み感を消す決め台詞。富裕層が嫌う「営業臭」を消し去る。"
     },
     {
       text: "Quality, story, and craftsmanship are not luxuries. They're a way of living. That's what we offer — not just flowers, but a presence.",
-      level: 2
+      why: "値段の話を哲学に昇華させるフレーズ。価格交渉を価値の議論に切り替える。"
     },
+    {
+      text: "It's priced where it is because of what's behind it — generations of grower craft, the freshest flowers in the world, and the only international cold chain that can deliver them this fast.",
+      why: "「高い」と言われた時の最強の答え。謝らず、説明する。これを言えれば値引き圧力に負けない。"
+    },
+    {
+      text: "I belong to what we call Japan's lost generation — we grew up watching our country lose its confidence. Our role is to remind Japan, and the world, that Japan still has things worth bringing out.",
+      why: "あなたの個人的な使命を語る決め台詞。これが言えると相手は応援したくなる。"
+    },
+    {
+      text: "If this resonates, let's talk seriously about what a partnership could look like. If it doesn't, tell me — I'd rather know now. And if there's someone in your circle who would care, I'd be grateful for an introduction.",
+      why: "クロージングの完成形。押し売りせず、紹介まで促す。商談の終わり方の理想形。"
+    }
   ]
 };
+
+// 教材ごとの「なぜ」を引きやすくする検索関数
+function getShadowWhy(text) {
+  const all = [...SHADOW_BANK.short, ...SHADOW_BANK.long];
+  const found = all.find(s => s.text === text);
+  return found ? found.why : null;
+}
 
 // 初期語彙データ（30個）
 const INITIAL_VOCAB = [
@@ -428,6 +452,64 @@ const HERO_MESSAGES = {
     "Sleep is recovery. But touch English first.",
     "Quiet effort, loud results."
   ]
+};
+
+// =====================================================
+// 各機能の「なぜやるか」（モチベーション×目的の明示）
+// =====================================================
+const PURPOSE = {
+  declaration: {
+    why: "1日の最初のアイデンティティセット。脳に「私は世界と英語で話す人間だ」と宣言することで、その後の練習効率が3倍になる。",
+    impact: "→ 商談本番の自信に直結"
+  },
+  hook: {
+    why: "あなたの自己紹介の最初の20秒は、商談の運命を決める。何度も口に出すことで、緊張下でも自動で口が動くようになる。",
+    impact: "→ 7/23の最初の名刺交換で勝つ"
+  },
+  shadowing: {
+    why: "脳ではなく口の筋肉に英語を染み込ませる。本番で「考えてから話す」では遅い。シャドーイングは、無意識のレベルで英語が出るようにする唯一の方法。",
+    impact: "→ 商談中に詰まらない、自然な英語"
+  },
+  vocab: {
+    why: "富裕層相手の商談では、語彙の質が「品」を作る。'buy'ではなく'acquire'、'expensive'ではなく'reflects the value'を使えるかで印象が変わる。忘却曲線で確実に定着させる。",
+    impact: "→ 富裕層に「教養ある日本人」と認識される"
+  },
+  flash: {
+    why: "想定質問への即答力。富裕層は「考え込む人」より「軽やかに答える人」を信頼する。Q&Aを脳に焼き付けることで、商談中に間が空かない。",
+    impact: "→ 30の想定質問にすべて10秒で答えられる"
+  },
+  scenes: {
+    why: "シーン別フレーズは「使う場所」とセットで覚える。商談、食事、雑談、別れ際 — それぞれで使う英語が違う。場面ごとの定型句で会話の流れを止めない。",
+    impact: "→ 食事や別れ際で品格を出せる"
+  },
+  voiceRoleplay: {
+    why: "実戦想定。AIと会話することで「想定外の質問への対応力」が鍛えられる。商談本番で初めて聞かれた質問にも対処できるようになる。",
+    impact: "→ 想定外質問への臨機応変力"
+  },
+  pronunciation: {
+    why: "発音は「品」と「自信」の両方を作る。R/L、TH、語尾の子音 — 日本人特有の弱点を意識的に直すことで、聞き返される回数が激減する。",
+    impact: "→ 聞き返されないコミュニケーション"
+  },
+  diary: {
+    why: "今日の振り返り3行は、潜在意識に「学習した感覚」を刻む。記録は習慣化の最大の鍵。書くことで、明日もまた開く理由ができる。",
+    impact: "→ 連続日数を支える儀式"
+  },
+  timeline: {
+    why: "7/23当日のイメージトレーニング。シーン別の英語を時系列で見ることで、本番での流れが脳に刻まれる。当日「初めて」を減らす。",
+    impact: "→ 本番で焦らない準備"
+  },
+  weeklyReport: {
+    why: "進捗の可視化は習慣の燃料。「やった量」が見えるとモチベーションが続く。先週との比較で、自分の成長を実感する。",
+    impact: "→ 続ける理由を作る"
+  },
+  phraseToday: {
+    why: "1日1フレーズで語彙のリズムを保つ。短くても毎日触ることが、長期記憶への王道。",
+    impact: "→ 引き出しを毎日1つ増やす"
+  },
+  emergency: {
+    why: "完璧主義は習慣の最大の敵。忙しい日でも2分だけ触ることで、連続が途切れない。「やめないこと」が「上達すること」より大事な時期がある。",
+    impact: "→ ストリークを守る最終手段"
+  }
 };
 
 const ACHIEVEMENTS = [

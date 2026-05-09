@@ -1,5 +1,5 @@
 // =====================================================
-// 音声合成（TTS）と音声認識（STT）
+// 音声合成（TTS）+ 録音 + 発音チェック（iOS互換）
 // =====================================================
 const Speech = {
   voices: [],
@@ -9,7 +9,6 @@ const Speech = {
     if (!('speechSynthesis' in window)) return;
     const load = () => {
       this.voices = window.speechSynthesis.getVoices();
-      // 優先順位：Daniel(英)、Alex、Samantha、その他英語
       const priorities = ['Daniel', 'Alex', 'Samantha', 'Karen', 'Tom', 'Fred'];
       for (const name of priorities) {
         const v = this.voices.find(v => v.name.includes(name));
@@ -41,118 +40,199 @@ const Speech = {
   },
 
   // ====================================================
-  // 音声認識（Speech Recognition）
+  // 環境検出
+  // ====================================================
+  isStandalone() {
+    return (window.navigator.standalone === true) ||
+           (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  },
+  isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  },
+  hasMediaSupport() {
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  },
+  hasSpeechRecognition() {
+    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  },
+
+  // ====================================================
+  // 音声認識（Web Speech API）— Safari/Chrome用
   // ====================================================
   recognition: null,
   isListening: false,
 
   startRecognition(onResult, onError) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { onError && onError('Speech Recognition not supported'); return false; }
-    this.recognition = new SR();
-    this.recognition.lang = 'en-US';
-    this.recognition.interimResults = false;
-    this.recognition.continuous = false;
-    this.recognition.maxAlternatives = 3;
-
-    this.recognition.onresult = (e) => {
-      const result = e.results[0];
-      const transcript = result[0].transcript;
-      const confidence = result[0].confidence;
-      onResult && onResult(transcript, confidence, result);
-    };
-    this.recognition.onerror = (e) => {
-      this.isListening = false;
-      onError && onError(e.error);
-    };
-    this.recognition.onend = () => {
-      this.isListening = false;
-    };
+    if (!SR) {
+      onError && onError('SpeechRecognition not supported in this browser. Try Safari or Chrome.');
+      return false;
+    }
     try {
+      this.recognition = new SR();
+      this.recognition.lang = 'en-US';
+      this.recognition.interimResults = false;
+      this.recognition.continuous = false;
+      this.recognition.maxAlternatives = 3;
+
+      this.recognition.onresult = (e) => {
+        const result = e.results[0];
+        const transcript = result[0].transcript;
+        const confidence = result[0].confidence;
+        this.isListening = false;
+        onResult && onResult(transcript, confidence, result);
+      };
+      this.recognition.onerror = (e) => {
+        this.isListening = false;
+        let msg = e.error || 'unknown';
+        if (msg === 'not-allowed') msg = 'Microphone permission denied. Please allow mic access.';
+        else if (msg === 'no-speech') msg = 'No speech detected. Try speaking louder.';
+        else if (msg === 'network') msg = 'Network error. Speech recognition needs internet.';
+        else if (msg === 'service-not-allowed') msg = 'Service not allowed. If using Home Screen app, open in Safari instead.';
+        onError && onError(msg);
+      };
+      this.recognition.onend = () => { this.isListening = false; };
       this.recognition.start();
       this.isListening = true;
       return true;
-    } catch(e) { onError && onError(e.message); return false; }
+    } catch (e) {
+      onError && onError(e.message || 'Failed to start recognition');
+      return false;
+    }
   },
 
   stopRecognition() {
     if (this.recognition && this.isListening) {
-      this.recognition.stop();
+      try { this.recognition.stop(); } catch(e) {}
       this.isListening = false;
     }
   },
 
   // ====================================================
-  // 録音（MediaRecorder）
+  // 録音（MediaRecorder）— iOS互換版
   // ====================================================
   mediaRecorder: null,
   audioChunks: [],
   audioStream: null,
+  recordingMime: null,
 
-  async startRecording(onLevel) {
-    try {
-      this.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.audioChunks = [];
-      this.mediaRecorder = new MediaRecorder(this.audioStream);
-      this.mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) this.audioChunks.push(e.data);
-      };
-      this.mediaRecorder.start();
-
-      // 音量レベル取得（オプション）
-      if (onLevel && window.AudioContext) {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioCtx.createMediaStreamSource(this.audioStream);
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 256;
-        source.connect(analyser);
-        const data = new Uint8Array(analyser.frequencyBinCount);
-        const tick = () => {
-          if (!this.mediaRecorder || this.mediaRecorder.state !== 'recording') return;
-          analyser.getByteFrequencyData(data);
-          let sum = 0;
-          for (let i = 0; i < data.length; i++) sum += data[i];
-          const level = sum / data.length / 255;
-          onLevel(level);
-          requestAnimationFrame(tick);
-        };
-        tick();
+  pickMime() {
+    // iOSはaudio/webm非対応。audio/mp4 (m4a) が確実
+    const candidates = [
+      'audio/mp4',
+      'audio/mp4;codecs=mp4a.40.2',
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      ''
+    ];
+    for (const m of candidates) {
+      if (m === '') return ''; // ブラウザのデフォルトに任せる
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) {
+        return m;
       }
+    }
+    return '';
+  },
+
+  async startRecording() {
+    // 環境チェック
+    if (!this.hasMediaSupport()) {
+      throw new Error('NO_MEDIA_API');
+    }
+    if (!window.isSecureContext) {
+      throw new Error('NOT_SECURE');
+    }
+
+    try {
+      this.audioStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+      this.audioChunks = [];
+      this.recordingMime = this.pickMime();
+      const opts = this.recordingMime ? { mimeType: this.recordingMime } : {};
+      this.mediaRecorder = new MediaRecorder(this.audioStream, opts);
+      this.mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) this.audioChunks.push(e.data);
+      };
+      // 0.5秒ごとにデータを吐く（iOSでも安定）
+      this.mediaRecorder.start(500);
       return true;
-    } catch(e) {
-      console.error('Recording failed:', e);
-      return false;
+    } catch (e) {
+      console.error('startRecording error:', e);
+      this.audioStream = null;
+      this.mediaRecorder = null;
+      if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+        throw new Error('PERM_DENIED');
+      }
+      if (e.name === 'NotFoundError') {
+        throw new Error('NO_MIC');
+      }
+      throw e;
     }
   },
 
   async stopRecording() {
     return new Promise((resolve) => {
       if (!this.mediaRecorder) { resolve(null); return; }
-      this.mediaRecorder.onstop = () => {
-        const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
+      const finalize = () => {
+        const type = this.recordingMime || 'audio/mp4';
+        const blob = new Blob(this.audioChunks, { type });
         if (this.audioStream) {
           this.audioStream.getTracks().forEach(t => t.stop());
           this.audioStream = null;
         }
         const url = URL.createObjectURL(blob);
-        resolve({ blob, url });
+        this.mediaRecorder = null;
+        resolve({ blob, url, mime: type });
       };
-      this.mediaRecorder.stop();
+      if (this.mediaRecorder.state === 'inactive') { finalize(); return; }
+      this.mediaRecorder.onstop = finalize;
+      try { this.mediaRecorder.stop(); } catch(e) { finalize(); }
     });
   },
 
   // ====================================================
-  // 発音差分計算（実用版）
+  // Whisper APIで録音→文字起こし（オプション、APIキーあれば）
   // ====================================================
-  // Levenshtein 距離ベース＋単語マッチで色分け
+  async transcribeWithWhisper(blob, mime) {
+    if (typeof Storage === 'undefined' || !Storage.hasApiKey()) {
+      throw new Error('NO_API_KEY');
+    }
+    const ext = (mime || '').includes('mp4') ? 'm4a' :
+                (mime || '').includes('webm') ? 'webm' :
+                (mime || '').includes('ogg') ? 'ogg' : 'm4a';
+    const fd = new FormData();
+    fd.append('file', blob, 'recording.' + ext);
+    fd.append('model', 'whisper-1');
+    fd.append('language', 'en');
+    const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + Storage.getApiKey() },
+      body: fd
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      throw new Error('WHISPER_FAIL: ' + r.status);
+    }
+    const data = await r.json();
+    return data.text || '';
+  },
+
+  // ====================================================
+  // 発音差分計算
+  // ====================================================
   computeDiff(target, spoken) {
     const tWords = this.tokenize(target);
     const sWords = this.tokenize(spoken);
     const result = [];
     const sUsed = new Set();
 
-    // 各target単語について、最も近いspoken単語を探す
-    tWords.forEach((tw, ti) => {
+    tWords.forEach((tw) => {
       let best = -1, bestDist = Infinity;
       sWords.forEach((sw, si) => {
         if (sUsed.has(si)) return;
@@ -168,10 +248,8 @@ const Speech = {
         result.push({ word: tw, status: 'missing' });
       }
     });
-    // sUsedに入ってないspoken単語は余分
     const extra = sWords.filter((_, i) => !sUsed.has(i));
 
-    // スコア計算（0-100）
     const correct = result.filter(r => r.status === 'correct').length;
     const partial = result.filter(r => r.status === 'partial').length;
     const score = Math.round(((correct + partial * 0.5) / Math.max(1, tWords.length)) * 100);
@@ -180,7 +258,7 @@ const Speech = {
   },
 
   tokenize(text) {
-    return text.toLowerCase()
+    return (text || '').toLowerCase()
       .replace(/[.,!?;:'"()\u2018\u2019\u201c\u201d—–]/g, '')
       .split(/\s+/)
       .filter(Boolean);
