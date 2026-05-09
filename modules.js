@@ -62,6 +62,18 @@ const Modules = {
           </div>
         </div>
       </div>
+      ${card.qJp ? `
+      <div class="lesson-jp">
+        <div class="lesson-label">🇯🇵 JAPANESE</div>
+        <div class="lesson-text"><b>Q:</b> ${card.qJp}<br><b>A:</b> ${card.aJp || ''}</div>
+      </div>
+      ` : ''}
+      ${card.grammar ? `
+      <div class="lesson-grammar">
+        <div class="lesson-label">📖 GRAMMAR</div>
+        <div class="lesson-text">${card.grammar}</div>
+      </div>
+      ` : ''}
       <button class="btn-primary" onclick="Speech.speak(\`${aEsc}\`)">🔊 LISTEN</button>
       <div class="btn-row-3">
         <button class="speed-btn" onclick="Speech.speak(\`${aEsc}\`, 0.75)">0.75x</button>
@@ -95,6 +107,18 @@ const Modules = {
           </div>
         </div>
       </div>
+      ${card.qJp ? `
+      <div class="lesson-jp">
+        <div class="lesson-label">🇯🇵 JAPANESE</div>
+        <div class="lesson-text"><b>Q:</b> ${card.qJp}<br><b>A:</b> ${card.aJp || ''}</div>
+      </div>
+      ` : ''}
+      ${card.grammar ? `
+      <div class="lesson-grammar">
+        <div class="lesson-label">📖 GRAMMAR</div>
+        <div class="lesson-text">${card.grammar}</div>
+      </div>
+      ` : ''}
       <button class="btn-primary" onclick="Speech.speak(\`${aEsc}\`)">🔊 LISTEN</button>
       <button class="btn-primary btn-pink" onclick="Shadowing.start(\`${aEsc}\`, ${aEsc.length > 60 ? 2 : 1});">🎬 SHADOWING DRILL</button>
       <button class="btn-secondary" onclick="App.openModule('flash-random')">🔀 ANOTHER ONE</button>
@@ -374,9 +398,10 @@ const Modules = {
       <div class="example">
         <div class="example-en">${p.en}</div>
         <div class="example-jp">${p.jp}</div>
+        ${p.grammar ? `<div style="font-size:11px; color: var(--purple-dark); font-weight: 700; margin-top: 6px; line-height: 1.5; padding: 6px 8px; background: rgba(206, 130, 255, 0.08); border-radius: 6px; border-left: 2px solid var(--purple);">📖 ${p.grammar}</div>` : ''}
         <div style="display:flex; gap:6px; margin-top:8px;">
           <button class="example-speak" onclick="Speech.speak(\`${p.en.replace(/`/g,"'")}\`, 0.9)">🔊 PLAY</button>
-          <button class="example-speak" onclick="Shadowing.start(\`${p.en.replace(/`/g,"'")}\`, 1); setTimeout(()=>Shadowing.render(),100);">🎬 50×</button>
+          <button class="example-speak" onclick="Shadowing.start(\`${p.en.replace(/`/g,"'")}\`, 1);">🎬 50×</button>
           <button class="example-speak" onclick="Vocab.add({type:'sentence', en:\`${p.en.replace(/`/g,"'")}\`, jp:\`${p.jp.replace(/`/g,"'")}\`, examples:[]}); App.toast('Added to vocab ✓');">+ VOCAB</button>
         </div>
       </div>
@@ -513,16 +538,42 @@ const Modules = {
 
   // ========== Listen / Roleplay (ChatGPT) ==========
   listen() {
+    const day = new Date().getDay();
+    const media = DAILY_MEDIA[day];
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     document.getElementById('modalBody').innerHTML = `
-      <div class="modal-title">LISTENING</div>
-      <div style="font-size:13px; color: var(--text-dim); margin-bottom: 14px; line-height:1.6;">
-        Pick one. Press play. Put in earbuds.
+      <div class="modal-title">TODAY'S MEDIA · ${dayNames[day].toUpperCase()}</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY TODAY'S PICKS</div>
+        <div class="why-text">毎日違うテーマで自動推薦。あなたが教材を探す時間ゼロ。今日の組み合わせで耳と頭が両方鍛えられる。</div>
+        <div class="why-impact">→ 完全自動・選ぶストレスなし</div>
       </div>
-      <a href="https://open.spotify.com/search/Monocle%20Entrepreneurs" target="_blank" class="btn-primary" style="text-decoration:none; text-align:center; display:block;">🎙️ MONOCLE: ENTREPRENEURS</a>
-      <a href="https://open.spotify.com/search/How%20I%20Built%20This" target="_blank" class="btn-secondary" style="text-decoration:none; text-align:center; display:block;">🚀 HOW I BUILT THIS</a>
-      <a href="https://open.spotify.com/search/HBR%20IdeaCast" target="_blank" class="btn-secondary" style="text-decoration:none; text-align:center; display:block;">📊 HBR IDEACAST</a>
-      <a href="https://open.spotify.com/search/Bloomberg%20Pursuits" target="_blank" class="btn-secondary" style="text-decoration:none; text-align:center; display:block;">💎 BLOOMBERG PURSUITS</a>
-      <button class="btn-primary btn-success" style="margin-top:14px;" onclick="Storage.markDone('listen'); App.toast('Listening tracked ✓'); App.closeModal();">✓ MARK DONE</button>
+
+      <!-- Podcast -->
+      <div class="media-card media-podcast">
+        <div class="media-type">🎙️ PODCAST · ${media.podcast.duration}</div>
+        <div class="media-title">${media.podcast.title}</div>
+        <div class="media-listen">
+          <span class="media-listen-label">📍 LISTEN:</span> ${media.podcast.listen}
+        </div>
+        <div class="media-why">${media.podcast.why}</div>
+        <div class="media-catch">💡 ${media.podcast.catchPhrase}</div>
+        <a href="${media.podcast.search || media.podcast.url}" target="_blank" class="btn-primary" style="text-decoration:none; text-align:center; display:block;">🔗 OPEN PODCAST</a>
+      </div>
+
+      <!-- Video -->
+      <div class="media-card media-video">
+        <div class="media-type">🎬 VIDEO · ${media.video.duration}</div>
+        <div class="media-title">${media.video.title}</div>
+        <div class="media-listen">
+          <span class="media-listen-label">📍 WATCH:</span> ${media.video.watch}
+        </div>
+        <div class="media-why">${media.video.why}</div>
+        <div class="media-catch">💡 ${media.video.catchPhrase}</div>
+        <a href="${media.video.url}" target="_blank" class="btn-primary btn-pink" style="text-decoration:none; text-align:center; display:block;">🔗 OPEN VIDEO</a>
+      </div>
+
+      <button class="btn-primary btn-success" style="margin-top:14px;" onclick="Storage.markDone('listen'); App.awardXP(15, event); App.toast('+15 XP for listening ✓', 'xp'); App.closeModal();">✓ I LISTENED (+15 XP)</button>
     `;
   },
 

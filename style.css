@@ -1311,3 +1311,113 @@ textarea:focus, input:focus { outline: none; border-color: var(--info); }
   position: relative;
   z-index: 1;
 }
+
+/* Lesson — JP translation card */
+.lesson-jp {
+  background: linear-gradient(135deg, #ebffe0, #d4f0c0);
+  border: 2px solid var(--success);
+  border-bottom-width: 3px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.lesson-jp .lesson-label {
+  font-size: 10px;
+  color: var(--success-dark);
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  margin-bottom: 4px;
+}
+.lesson-jp .lesson-text {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+/* Lesson — Grammar card */
+.lesson-grammar {
+  background: linear-gradient(135deg, #e6f6ff, #d2ebff);
+  border: 2px solid var(--info);
+  border-bottom-width: 3px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.lesson-grammar .lesson-label {
+  font-size: 10px;
+  color: var(--info-dark);
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  margin-bottom: 4px;
+}
+.lesson-grammar .lesson-text {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+/* Daily Media cards */
+.media-card {
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 2px solid var(--line);
+  border-bottom-width: 4px;
+}
+.media-card.media-podcast {
+  background: linear-gradient(135deg, #fff7e0, #ffeec2);
+  border-color: var(--accent);
+}
+.media-card.media-video {
+  background: linear-gradient(135deg, #fff0f4, #ffd6e3);
+  border-color: var(--primary);
+}
+.media-type {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: var(--text-soft);
+  margin-bottom: 6px;
+}
+.media-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+.media-listen {
+  background: rgba(255,255,255,0.7);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.5;
+}
+.media-listen-label {
+  color: var(--primary-dark);
+  font-weight: 900;
+  margin-right: 4px;
+}
+.media-why {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 700;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.media-catch {
+  font-size: 11px;
+  color: var(--purple-dark);
+  font-weight: 800;
+  font-style: italic;
+  margin-bottom: 12px;
+  background: rgba(206, 130, 255, 0.1);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border-left: 2px solid var(--purple);
+}

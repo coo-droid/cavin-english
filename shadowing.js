@@ -224,23 +224,23 @@ const Shadowing = {
     const area = document.getElementById('diffArea');
     if (!area) return;
 
-    // 録音中なら止める
+    // ★ aborted対策：TTSとマイクが干渉する。完全に止めて待つ
+    Speech.cancel();
+    Speech.stopRecognition();
     if (this.state.isRecording) {
       try { await Speech.stopRecording(); } catch(e) {}
       this.state.isRecording = false;
     }
+    // 200ms待つ（iOS SafariのTTS停止確実性のため）
+    await new Promise(r => setTimeout(r, 250));
 
-    // どの方式を使うか
-    // - APIキーがあれば: 録音→Whisper API（最も正確、PWAでも動く）
-    // - そうでなく Web Speech 使えれば: それ
-    // - どちらもダメ: エラー表示
-
+    // APIキーがあればWhisper（最も確実）
     if (Storage.hasApiKey()) {
       area.innerHTML = `
         <div style="text-align:center; padding: 18px; background: var(--bg-soft); border-radius: 14px; margin-bottom: 10px;">
           <div style="font-size: 40px; margin-bottom: 6px;">🎙️</div>
-          <div style="color: var(--info); font-weight: 900; font-size: 14px;">RECORDING... TAP STOP WHEN DONE</div>
-          <div style="color: var(--text-soft); font-size: 12px; margin-top: 4px; font-weight: 700;">Read the sentence aloud now</div>
+          <div style="color: var(--info); font-weight: 900; font-size: 14px;">RECORDING... READ THE SENTENCE</div>
+          <div style="color: var(--text-soft); font-size: 12px; margin-top: 4px; font-weight: 700;">Tap stop when done</div>
         </div>
         <button class="btn-primary btn-danger" id="stopWhisperBtn">⏹ STOP & ANALYZE</button>
       `;
@@ -256,12 +256,17 @@ const Shadowing = {
             Storage.recordEvent('pronunciation_check');
             Storage.addXP(5);
           } catch (e) {
-            area.innerHTML = `<div style="background:#ffe9e9; border:2px solid var(--danger); border-radius:14px; padding:14px; color:var(--danger-dark); font-weight:800;">Whisper failed: ${e.message}</div>`;
+            area.innerHTML = `
+              <div style="background:#ffe9e9; border:2px solid var(--danger); border-radius:14px; padding:14px; color:var(--danger-dark); font-weight:800;">
+                Whisper failed: ${e.message}
+              </div>
+              <button class="btn-primary" onclick="Shadowing.checkPronunciation()">🔁 RETRY</button>
+            `;
           }
         };
       } catch (e) {
         this.handleMicError(e);
-        area.innerHTML = '';
+        area.innerHTML = `<button class="btn-primary" onclick="Shadowing.checkPronunciation()">🔁 RETRY</button>`;
       }
       return;
     }
@@ -272,7 +277,7 @@ const Shadowing = {
         <div style="background:#fff7e0; border:2px solid var(--accent); border-radius:14px; padding:14px; color: var(--text); font-weight:800; font-size:13px; line-height:1.6;">
           🔧 Pronunciation check needs either:<br>
           <b>1.</b> Open in Safari (not Home Screen app), OR<br>
-          <b>2.</b> Set OpenAI API key in AI Tutor → enables Whisper for accurate scoring.
+          <b>2.</b> Set OpenAI API key in AI Tutor → enables Whisper (most accurate, works in PWA).
         </div>
       `;
       return;
@@ -293,11 +298,14 @@ const Shadowing = {
         Storage.addXP(5);
       },
       (err) => {
+        const isAborted = (err || '').toLowerCase().includes('abort');
         area.innerHTML = `
           <div style="background:#ffe9e9; border:2px solid var(--danger); border-radius:14px; padding:14px; color:var(--danger-dark); font-weight:800; font-size:13px; line-height:1.6;">
             🚫 ${err}<br>
-            <span style="font-weight:700; color: var(--text-soft); font-size:11px;">Tip: open in Safari (not Home Screen app), allow microphone, ensure internet.</span>
+            ${isAborted ? '<span style="font-weight:700; color: var(--text-soft); font-size:11px;">Audio playback was interrupting. Try again — it should work now.</span>' : '<span style="font-weight:700; color: var(--text-soft); font-size:11px;">Tip: open in Safari (not Home Screen app), allow microphone, ensure internet.</span>'}
           </div>
+          <button class="btn-primary" onclick="Shadowing.checkPronunciation()">🔁 RETRY</button>
+          ${!Storage.hasApiKey() ? '<button class="btn-secondary" onclick="App.openModule(\'chatgpt-api\')">⚙️ SET OPENAI KEY (most reliable)</button>' : ''}
         `;
       }
     );
@@ -421,6 +429,20 @@ const Shadowing = {
 
       <!-- 教材本文 -->
       <div class="shadow-text">${item.text}</div>
+
+      ${item.jp ? `
+      <div class="lesson-jp">
+        <div class="lesson-label">🇯🇵 JAPANESE</div>
+        <div class="lesson-text">${item.jp}</div>
+      </div>
+      ` : ''}
+
+      ${item.grammar ? `
+      <div class="lesson-grammar">
+        <div class="lesson-label">📖 GRAMMAR</div>
+        <div class="lesson-text">${item.grammar}</div>
+      </div>
+      ` : ''}
 
       <!-- 反復カウンタ -->
       <div class="shadow-counter">${this.state.current} <span style="color: var(--text-dim); font-size: 36px;">/ ${item.target}</span></div>
