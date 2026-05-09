@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CAVIN English">
+<meta name="theme-color" content="#0a0a0a">
+<title>CAVIN English</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230a0a0a'/%3E%3Ctext x='90' y='115' font-size='90' text-anchor='middle' fill='%23d4af37'%3E🌸%3C/text%3E%3C/svg%3E">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #0a0a0a;
+    --card: #161616;
+    --card2: #1f1f1f;
+    --gold: #d4af37;
+    --gold-dim: #8a7228;
+    --text: #f5f5f5;
+    --text-dim: #888;
+    --green: #4ade80;
+    --red: #ef4444;
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Helvetica Neue", sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    padding-bottom: 80px;
+  }
+  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+  header {
+    padding: 20px 0 16px;
+    text-align: center;
+    border-bottom: 1px solid #222;
+    margin-bottom: 24px;
+  }
+  .logo {
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .brand {
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: 2px;
+  }
+  .subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+  .streak-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card);
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    border: 1px solid #222;
+  }
+  .streak-num {
+    font-size: 28px;
+    font-weight: 200;
+    color: var(--gold);
+  }
+  .streak-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+  }
+  .now-card {
+    background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+    border: 1px solid var(--gold-dim);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .now-time {
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .now-title {
+    font-size: 20px;
+    font-weight: 400;
+    margin-bottom: 12px;
+  }
+  .now-desc {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .start-btn {
+    display: block;
+    width: 100%;
+    margin-top: 18px;
+    padding: 16px;
+    background: var(--gold);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+  }
+  .section-title {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin: 24px 0 10px;
+    padding-left: 4px;
+  }
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .menu-item {
+    background: var(--card);
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 18px 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text);
+    font-family: inherit;
+  }
+  .menu-item:active { transform: scale(0.97); background: var(--card2); }
+  .menu-icon { font-size: 20px; margin-bottom: 8px; }
+  .menu-name { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .menu-desc { font-size: 10px; color: var(--text-dim); }
+
+  /* MODAL */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+    overflow-y: auto;
+  }
+  .modal.active { display: flex; }
+  .modal-content {
+    background: var(--card);
+    border: 1px solid #2a2a2a;
+    border-radius: 20px;
+    padding: 28px 22px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: #222;
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .modal-title {
+    font-size: 12px;
+    color: var(--gold);
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+  }
+  .flash-q {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+  .flash-a {
+    font-size: 19px;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 24px;
+    font-weight: 300;
+  }
+  .speak-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: var(--gold);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .speak-btn:disabled { opacity: 0.5; }
+  .secondary-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid #333;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .declaration {
+    text-align: center;
+    font-size: 22px;
+    line-height: 1.5;
+    color: var(--gold);
+    padding: 30px 10px;
+    font-weight: 300;
+    font-style: italic;
+  }
+  .hook-text {
+    font-size: 17px;
+    line-height: 1.7;
+    text-align: center;
+    padding: 20px 0;
+  }
+  textarea {
+    width: 100%;
+    background: #0a0a0a;
+    color: var(--text);
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    margin-bottom: 10px;
+  }
+  textarea:focus { outline: none; border-color: var(--gold); }
+  .label {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+    margin-top: 12px;
+  }
+  .save-btn {
+    background: var(--green);
+    color: #000;
+  }
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-200%);
+    background: var(--gold);
+    color: #000;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 200;
+    transition: transform 0.3s;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .schedule-list {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 4px 0;
+    border: 1px solid #222;
+  }
+  .schedule-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid #1a1a1a;
+    cursor: pointer;
+  }
+  .schedule-item:last-child { border-bottom: none; }
+  .schedule-item:active { background: var(--card2); }
+  .sch-time { color: var(--gold); font-size: 13px; min-width: 56px; font-weight: 500; }
+  .sch-name { font-size: 14px; flex: 1; }
+  .sch-arrow { color: var(--text-dim); font-size: 14px; }
+  .past { opacity: 0.45; }
+  .now-active { background: rgba(212, 175, 55, 0.08); }
+  .day-label {
+    text-align: center;
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+  .diary-entry {
+    background: #0a0a0a;
+    border: 1px solid #1f1f1f;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .diary-date { font-size: 11px; color: var(--gold); margin-bottom: 8px; letter-spacing: 1px; }
+  .diary-text { font-size: 13px; color: var(--text-dim); line-height: 1.6; white-space: pre-wrap; }
+  .menu-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .speed-btn {
+    background: var(--card2);
+    border: 1px solid #333;
+    color: var(--text);
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .speed-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
+  .progress-bar {
+    background: #222;
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .progress-fill {
+    background: var(--gold);
+    height: 100%;
+    transition: width 0.3s;
+  }
+  .roleplay-prompt {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    font-family: ui-monospace, monospace;
+  }
+  .footer-hint {
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 30px;
+    padding: 10px;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+  <header>
+    <div class="logo">CAVIN</div>
+    <div class="brand">English Companion</div>
+    <div class="subtitle" id="dateLabel"></div>
+  </header>
+
+  <div class="streak-bar">
+    <div>
+      <div class="streak-num" id="streakNum">0</div>
+      <div class="streak-label">DAYS STREAK</div>
+    </div>
+    <div style="text-align: right;">
+      <div class="streak-num" id="todayCount" style="font-size: 20px;">0/11</div>
+      <div class="streak-label">TODAY</div>
+    </div>
+  </div>
+
+  <div class="now-card">
+    <div class="now-time" id="nowTime">— : —</div>
+    <div class="now-title" id="nowTitle">Loading...</div>
+    <div class="now-desc" id="nowDesc"></div>
+    <button class="start-btn" id="nowBtn">START</button>
+  </div>
+
+  <div class="section-title">TODAY'S SCHEDULE</div>
+  <div class="schedule-list" id="scheduleList"></div>
+
+  <div class="section-title">QUICK ACCESS</div>
+  <div class="menu-grid">
+    <button class="menu-item" onclick="openModule('declaration')">
+      <div class="menu-icon">🪞</div>
+      <div class="menu-name">Declaration</div>
+      <div class="menu-desc">Identity reset</div>
+    </button>
+    <button class="menu-item" onclick="openModule('hook')">
+      <div class="menu-icon">🌸</div>
+      <div class="menu-name">Self Intro Hook</div>
+      <div class="menu-desc">Practice anytime</div>
+    </button>
+    <button class="menu-item" onclick="openModule('flash-random')">
+      <div class="menu-icon">🃏</div>
+      <div class="menu-name">Random Flash</div>
+      <div class="menu-desc">Q&A drill</div>
+    </button>
+    <button class="menu-item" onclick="openModule('phrase-today')">
+      <div class="menu-icon">📝</div>
+      <div class="menu-name">Today's Phrase</div>
+      <div class="menu-desc">Daily one-liner</div>
+    </button>
+    <button class="menu-item" onclick="openModule('shadow')">
+      <div class="menu-icon">🎬</div>
+      <div class="menu-name">Shadowing</div>
+      <div class="menu-desc">10-min main</div>
+    </button>
+    <button class="menu-item" onclick="openModule('listen')">
+      <div class="menu-icon">🎧</div>
+      <div class="menu-name">Listen</div>
+      <div class="menu-desc">Podcast launcher</div>
+    </button>
+    <button class="menu-item" onclick="openModule('roleplay')">
+      <div class="menu-icon">💼</div>
+      <div class="menu-name">Roleplay</div>
+      <div class="menu-desc">ChatGPT launch</div>
+    </button>
+    <button class="menu-item" onclick="openModule('diary')">
+      <div class="menu-icon">📔</div>
+      <div class="menu-name">Diary</div>
+      <div class="menu-desc">3-line reflection</div>
+    </button>
+    <button class="menu-item" onclick="openModule('emergency')">
+      <div class="menu-icon">🚨</div>
+      <div class="menu-name">2-Min Mode</div>
+      <div class="menu-desc">When too busy</div>
+    </button>
+    <button class="menu-item" onclick="openModule('history')">
+      <div class="menu-icon">📊</div>
+      <div class="menu-name">History</div>
+      <div class="menu-desc">Past diaries</div>
+    </button>
+  </div>
+
+  <div class="footer-hint">
+    Add to Home Screen for app experience<br>
+    Safari → Share → Add to Home Screen
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+//====== DATA ======
+const SCHEDULE = [
+  { time: '06:30', mins: 390, key: 'declaration', icon: '🪞', name: 'Morning Declaration', desc: 'Identity reset in front of the mirror.' },
+  { time: '06:45', mins: 405, key: 'hook',        icon: '🚿', name: 'Shower Hook',         desc: 'Recite self-intro hook 3 times.' },
+  { time: '07:15', mins: 435, key: 'listen',      icon: '☕', name: 'Morning Podcast',     desc: 'Launch Monocle: The Entrepreneurs.' },
+  { time: '08:00', mins: 480, key: 'shadow',      icon: '🎧', name: 'Commute Shadowing',   desc: 'YouTube interview with mouth-tracking.' },
+  { time: '10:00', mins: 600, key: 'flash-am',    icon: '🃏', name: 'Morning Flash',       desc: 'Today\'s Q&A — morning slot.' },
+  { time: '12:00', mins: 720, key: 'flash-noon',  icon: '🃏', name: 'Noon Flash',          desc: 'Today\'s Q&A — noon slot.' },
+  { time: '12:45', mins: 765, key: 'phrase-today',icon: '📝', name: 'Today\'s Phrase',     desc: 'Speak today\'s phrase aloud 3 times.' },
+  { time: '15:00', mins: 900, key: 'flash-pm',    icon: '🃏', name: 'Afternoon Flash',     desc: 'Today\'s Q&A — afternoon slot.' },
+  { time: '18:00', mins: 1080,key: 'listen',      icon: '🚶', name: 'Evening Listen',      desc: 'Podcast on the way home.' },
+  { time: '21:00', mins: 1260,key: 'shadow',      icon: '🎬', name: 'Main Shadowing',      desc: '10-min focused practice + recording.' },
+  { time: '22:00', mins: 1320,key: 'flash-night', icon: '🃏', name: 'Night Flash',         desc: 'Last Q&A before bed.' },
+  { time: '22:10', mins: 1330,key: 'diary',       icon: '📔', name: '3-Line Diary',        desc: 'Reflect and sleep.' },
+];
+
+// 7曜 × 4枠 = 28枚
+// 0:Sun, 1:Mon, 2:Tue, 3:Wed, 4:Thu, 5:Fri, 6:Sat
+const FLASH = {
+  am: [
+    { q: "How did you leave VC for this?", a: "Numbers stopped moving me. I wanted to do something my future children could touch." },                  // Sun
+    { q: "How was your flight?", a: "Smooth, thank you. The warmth here caught me off guard in the best way." },                                          // Mon
+    { q: "Is this your first time in Indonesia?", a: "It is. And I've already promised myself it won't be the last." },                                   // Tue
+    { q: "How did you end up in flowers?", a: "I was a VC looking for what Japan has that the world needs. CAVIN gave me the answer." },                  // Wed
+    { q: "What do you think of Jakarta?", a: "It holds tradition and ambition at once. Japan has lost some of that balance — I'm here to learn it back." },// Thu
+    { q: "Are you the founder?", a: "Partner. I came from VC. I invested in CAVIN before I joined — I crossed the table." },                              // Fri
+    { q: "How do you ensure quality?", a: "We hand-pick growers, inspect at three points, and control temperature throughout." },                         // Sat
+  ],
+  noon: [
+    { q: "Are Dutch flowers better?", a: "Different philosophies. Dutch is volume. Japanese is seasonality, story, soul. We don't compete." },
+    { q: "Tell me about CAVIN.", a: "We bring Japan's finest flowers to the world. Direct grower network plus FedEx partnership for fastest international delivery." },
+    { q: "Why flowers?", a: "Japan grows some of the world's best flowers, but almost no one outside knows it. I'm changing that." },
+    { q: "How fresh are the flowers?", a: "Cut in Japan in the morning, in your hands within 48 to 72 hours. Almost as fresh as if you'd picked them yourself." },
+    { q: "Who are your customers?", a: "Luxury hotels, private clients who appreciate craft, and high-end event producers." },
+    { q: "Won't flowers wilt in Indonesian heat?", a: "We control the cold chain end to end. With proper care, they last as long here as in Tokyo." },
+    { q: "Can you do custom orders?", a: "Absolutely. Tell me the occasion and feeling — we design from there." },
+  ],
+  pm: [
+    { q: "Have you worked with Indonesians before?", a: "We're at the very beginning here. The first partners we choose will define our brand in Indonesia." },
+    { q: "That's expensive. Why?", a: "It's priced where it is because of what's behind it — generations of grower craft and a cold chain no one else has." },
+    { q: "What makes CAVIN different?", a: "Three things — direct grower relationships, FedEx-speed delivery, and curation. Quality, not volume." },
+    { q: "Can you do better on the price?", a: "I appreciate you asking. Pricing reflects quality. Let's find efficiency through a long-term partnership." },
+    { q: "What's the minimum order?", a: "For one-time, we start from a base level. For partnerships, we tailor to your rhythm — weekly, monthly." },
+    { q: "Show me your portfolio.", a: "Of course. Here's our look book — and I'll send a full version to you today." },
+    { q: "How do payments work?", a: "50% on confirmation, 50% on delivery. Monthly billing for ongoing partnerships." },
+  ],
+  night: [
+    { q: "One last thing?", a: "If someone in your circle would care about Japanese flowers, I'd be honored if you mentioned us." },
+    { q: "What do you need from me?", a: "Your honesty. If this resonates, let's talk seriously. If not, tell me — I'd rather know now." },
+    { q: "Why Indonesia?", a: "The grace, the warmth, the love of beauty here speaks the same language as Japanese flowers." },
+    { q: "What's your long-term vision?", a: "Japan's flower industry globally recognized within ten years — like Japanese whisky became." },
+    { q: "Why should I work with you specifically?", a: "You're not getting a salesperson. You're getting someone who left a comfortable career for this." },
+    { q: "What does success look like for you?", a: "When someone in Jakarta gives a Japanese flower to someone they love — and the moment matters." },
+    { q: "What's your dream for this trip?", a: "To find partners who believe in what we believe in. Not customers — co-founders of a new flower culture." },
+  ]
+};
+
+const DAILY_PHRASE = [
+  "Let's continue this conversation.",        // Sun
+  "What brings you here today?",              // Mon
+  "I'd love to hear the story behind that.",  // Tue
+  "Tell me more about that.",                 // Wed
+  "What drew you to this work?",              // Thu
+  "That's fascinating — how did you start?",  // Fri
+  "What matters most to you about this?",     // Sat
+];
+
+const DECLARATION = "I am someone who speaks English with the world.";
+
+const HOOK = `Japan grows some of the most beautiful flowers in the world.
+But almost no one outside Japan knows it.
+
+I'm Zacky. And I'm here to change that.`;
+
+const ROLEPLAY_PROMPTS = {
+  meeting: `You are Mr. Tan, a 50-year-old Chinese-Indonesian luxury hotel owner in Jakarta. You're meeting Zacky for the first time at a fashion carnival. He sells premium Japanese flowers from CAVIN — a Japanese company with direct grower relationships and a FedEx partnership for international delivery.
+
+Be skeptical but curious. You care about quality and exclusivity. You don't trust salespeople easily. Ask 5 business questions in English, one at a time. Wait for my answer between questions before asking the next. After all 5 questions, give honest feedback on my answers — what was strong, what could be sharper.
+
+Stay in character throughout. Speak like a sophisticated businessman, not a chatbot.
+
+Begin.`,
+  smalltalk: `You are Ibu Sari, a 45-year-old Indonesian fashion entrepreneur and art collector based in Jakarta. You're at a fashion carnival reception, drinking water (you don't drink alcohol). You meet Zacky, a Japanese man who works with luxury flowers.
+
+Engage in natural small talk in English — about Indonesia, Japan, fashion, beauty, life. Don't talk about flowers unless I bring it up. Ask thoughtful questions. Show interest in cultural differences. Be warm but observant.
+
+Speak naturally, with occasional Indonesian English patterns. Limit each turn to 2-3 sentences. Wait for my response before continuing.
+
+Begin by introducing yourself.`,
+  negotiation: `You are Pak Budi, a successful Indonesian event producer who specializes in luxury weddings. You're interested in Zacky's Japanese flowers but you push hard on price. You'll try to negotiate down significantly — at least 30%.
+
+Use realistic negotiation tactics: comparing to Dutch flowers, suggesting volume discounts, hinting at long-term contracts, expressing budget constraints. Test if Zacky can hold his ground while staying respectful.
+
+Conduct this in English. Five exchanges minimum. Give feedback at the end on negotiation skill.
+
+Begin.`
+};
+
+//====== STATE ======
+let speechRate = 0.9;
+
+function dayIndex() { return new Date().getDay(); }
+function nowMins() { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+}
+function getStorage(k, def) {
+  try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; }
+}
+function setStorage(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+function markDone(scheduleKey) {
+  const k = 'done_' + todayKey();
+  const set = new Set(getStorage(k, []));
+  set.add(scheduleKey);
+  setStorage(k, Array.from(set));
+  updateUI();
+}
+function isDone(scheduleKey) {
+  const k = 'done_' + todayKey();
+  return getStorage(k, []).includes(scheduleKey);
+}
+function todayDoneCount() {
+  return getStorage('done_' + todayKey(), []).length;
+}
+
+function updateStreak() {
+  const today = todayKey();
+  const lastActive = localStorage.getItem('lastActive');
+  let streak = parseInt(localStorage.getItem('streak') || '0');
+  if (lastActive === today) return streak;
+  // 何かしら1個でも完了していれば続く
+  if (todayDoneCount() === 0) return streak;
+  const yest = new Date(); yest.setDate(yest.getDate() - 1);
+  const yk = `${yest.getFullYear()}-${(yest.getMonth()+1).toString().padStart(2,'0')}-${yest.getDate().toString().padStart(2,'0')}`;
+  if (lastActive === yk) streak += 1;
+  else streak = 1;
+  localStorage.setItem('streak', streak);
+  localStorage.setItem('lastActive', today);
+  return streak;
+}
+
+//====== SPEECH ======
+function speak(text, rate = speechRate) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US';
+  u.rate = rate;
+  u.pitch = 1;
+  // 男性voiceがあれば優先
+  const voices = window.speechSynthesis.getVoices();
+  const male = voices.find(v => v.lang.startsWith('en') && /male|daniel|alex|fred|tom/i.test(v.name));
+  if (male) u.voice = male;
+  window.speechSynthesis.speak(u);
+}
+
+//====== TOAST ======
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+//====== UI ======
+function updateUI() {
+  // date
+  const d = new Date();
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  document.getElementById('dateLabel').textContent =
+    `${d.getFullYear()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getDate().toString().padStart(2,'0')}  ·  ${dayNames[d.getDay()]}`;
+  // streak
+  document.getElementById('streakNum').textContent = updateStreak();
+  document.getElementById('todayCount').textContent = `${todayDoneCount()}/11`;
+
+  // now & schedule
+  const cur = nowMins();
+  let nowItem = null;
+  let nextItem = null;
+  for (let i = 0; i < SCHEDULE.length; i++) {
+    if (SCHEDULE[i].mins <= cur && (!SCHEDULE[i+1] || SCHEDULE[i+1].mins > cur)) {
+      nowItem = SCHEDULE[i];
+      nextItem = SCHEDULE[i+1] || null;
+      break;
+    }
+  }
+  if (!nowItem) { nowItem = SCHEDULE[SCHEDULE.length-1]; nextItem = SCHEDULE[0]; }
+  // before 6:30
+  if (cur < SCHEDULE[0].mins) { nowItem = SCHEDULE[0]; nextItem = SCHEDULE[1]; }
+
+  // 表示は「次にやるべきもの（未完了かつ近い）」を優先
+  let displayItem = SCHEDULE.find(s => s.mins >= cur && !isDone(s.key));
+  if (!displayItem) displayItem = SCHEDULE.find(s => !isDone(s.key)) || SCHEDULE[0];
+
+  document.getElementById('nowTime').textContent = `${displayItem.time}  ·  ${displayItem.icon}  ${isDone(displayItem.key) ? 'COMPLETED' : 'NEXT UP'}`;
+  document.getElementById('nowTitle').textContent = displayItem.name;
+  document.getElementById('nowDesc').textContent = displayItem.desc;
+  document.getElementById('nowBtn').onclick = () => openModule(displayItem.key, displayItem);
+
+  // schedule list
+  const list = document.getElementById('scheduleList');
+  list.innerHTML = '';
+  SCHEDULE.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'schedule-item';
+    if (s.mins < cur && !isDone(s.key)) div.classList.add('past');
+    if (isDone(s.key)) div.style.opacity = '0.55';
+    if (Math.abs(s.mins - cur) < 30 && !isDone(s.key)) div.classList.add('now-active');
+    div.innerHTML = `
+      <span class="sch-time">${s.time}</span>
+      <span class="sch-name">${s.icon} ${s.name}</span>
+      <span class="sch-arrow">${isDone(s.key) ? '✓' : '›'}</span>
+    `;
+    div.onclick = () => openModule(s.key, s);
+    list.appendChild(div);
+  });
+}
+
+//====== MODULES ======
+function openModal(html) {
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modal').classList.add('active');
+  // pre-load voices
+  if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+
+function openModule(key, item) {
+  switch (key) {
+    case 'declaration': moduleDeclaration(); break;
+    case 'hook': moduleHook(); break;
+    case 'flash-am': moduleFlash('am', 'MORNING FLASH'); break;
+    case 'flash-noon': moduleFlash('noon', 'NOON FLASH'); break;
+    case 'flash-pm': moduleFlash('pm', 'AFTERNOON FLASH'); break;
+    case 'flash-night': moduleFlash('night', 'NIGHT FLASH'); break;
+    case 'flash-random': moduleFlashRandom(); break;
+    case 'phrase-today': modulePhraseToday(); break;
+    case 'shadow': moduleShadow(); break;
+    case 'listen': moduleListen(); break;
+    case 'roleplay': moduleRoleplay(); break;
+    case 'diary': moduleDiary(); break;
+    case 'emergency': moduleEmergency(); break;
+    case 'history': moduleHistory(); break;
+    default: openModal('<div class="modal-title">COMING SOON</div>');
+  }
+}
+
+function moduleDeclaration() {
+  openModal(`
+    <div class="modal-title">MORNING DECLARATION</div>
+    <div class="declaration">"${DECLARATION}"</div>
+    <button class="speak-btn" onclick="speak('${DECLARATION}', 0.85)">🔊 LISTEN</button>
+    <button class="speak-btn save-btn" onclick="markDone('declaration'); toast('Declared ✓'); closeModal();">✓ MARK DONE</button>
+  `);
+  setTimeout(() => speak(DECLARATION, 0.85), 400);
+}
+
+function moduleHook() {
+  openModal(`
+    <div class="modal-title">SELF-INTRO HOOK</div>
+    <div class="hook-text">${HOOK.replace(/\n/g,'<br>')}</div>
+    <div style="text-align:center; font-size:11px; color: var(--text-dim); margin-bottom:14px;">REPEAT 3 TIMES</div>
+    <div class="menu-grid-3">
+      <button class="speed-btn" onclick="speak(\`${HOOK}\`, 0.7)">SLOW 0.7x</button>
+      <button class="speed-btn active" onclick="speak(\`${HOOK}\`, 0.9)">NORMAL</button>
+      <button class="speed-btn" onclick="speak(\`${HOOK}\`, 1.1)">FAST 1.1x</button>
+    </div>
+    <button class="speak-btn save-btn" style="margin-top:14px;" onclick="markDone('hook'); toast('Hook practiced ✓'); closeModal();">✓ MARK DONE</button>
+  `);
+  setTimeout(() => speak(HOOK, 0.85), 400);
+}
+
+function moduleFlash(slot, title) {
+  const card = FLASH[slot][dayIndex()];
+  const dayNames = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  openModal(`
+    <div class="modal-title">${title} · ${dayNames[dayIndex()]}</div>
+    <div class="flash-q">Q: ${card.q}</div>
+    <div class="flash-a">${card.a}</div>
+    <button class="speak-btn" onclick="speak(\`${card.a.replace(/`/g,"'")}\`)">🔊 LISTEN ANSWER</button>
+    <div class="menu-grid-3">
+      <button class="speed-btn" onclick="speak(\`${card.a.replace(/`/g,"'")}\`, 0.75)">0.75x</button>
+      <button class="speed-btn active" onclick="speak(\`${card.a.replace(/`/g,"'")}\`, 0.9)">1.0x</button>
+      <button class="speed-btn" onclick="speak(\`${card.a.replace(/`/g,"'")}\`, 1.1)">1.2x</button>
+    </div>
+    <button class="speak-btn save-btn" style="margin-top:14px;" onclick="markDone('flash-${slot}'); toast('Flash done ✓'); closeModal();">✓ MARK DONE</button>
+    <button class="secondary-btn" onclick="closeModal()">CLOSE</button>
+  `);
+  setTimeout(() => speak(card.a, 0.9), 400);
+}
+
+function moduleFlashRandom() {
+  const slots = ['am','noon','pm','night'];
+  const slot = slots[Math.floor(Math.random()*4)];
+  const idx = Math.floor(Math.random()*7);
+  const card = FLASH[slot][idx];
+  openModal(`
+    <div class="modal-title">RANDOM FLASH</div>
+    <div class="flash-q">Q: ${card.q}</div>
+    <div class="flash-a">${card.a}</div>
+    <button class="speak-btn" onclick="speak(\`${card.a.replace(/`/g,"'")}\`)">🔊 LISTEN</button>
+    <button class="secondary-btn" onclick="moduleFlashRandom()">🔀 ANOTHER ONE</button>
+  `);
+  setTimeout(() => speak(card.a, 0.9), 300);
+}
+
+function modulePhraseToday() {
+  const phrase = DAILY_PHRASE[dayIndex()];
+  openModal(`
+    <div class="modal-title">TODAY'S PHRASE</div>
+    <div class="declaration" style="font-style:normal; font-size:24px;">"${phrase}"</div>
+    <div style="text-align:center; font-size:11px; color: var(--text-dim); margin-bottom:14px;">SAY IT 3 TIMES</div>
+    <button class="speak-btn" onclick="speak(\`${phrase}\`, 0.9)">🔊 LISTEN</button>
+    <button class="speak-btn save-btn" onclick="markDone('phrase-today'); toast('Phrase practiced ✓'); closeModal();">✓ MARK DONE</button>
+  `);
+  setTimeout(() => speak(phrase, 0.9), 400);
+}
+
+function moduleShadow() {
+  openModal(`
+    <div class="modal-title">SHADOWING SESSION</div>
+    <div style="font-size:14px; line-height:1.7; padding:8px 0 16px;">
+      <div style="color:var(--gold); margin-bottom:6px;">📋 4 STEPS · 10 MIN</div>
+      <div style="color:var(--text-dim); font-size:13px; line-height:1.8;">
+        ① Subtitles ON · 2 min<br>
+        ② Subtitles OFF · 2 min<br>
+        ③ Shadow speak · 3 min<br>
+        ④ Record yourself · 3 min
+      </div>
+    </div>
+    <a href="https://www.youtube.com/results?search_query=luxury+brand+CEO+interview" target="_blank" class="speak-btn" style="text-decoration:none; text-align:center; display:block;">🎬 OPEN YOUTUBE</a>
+    <a href="https://www.youtube.com/results?search_query=monocle+entrepreneurs+interview" target="_blank" class="secondary-btn" style="text-decoration:none; text-align:center; display:block;">🎙️ MONOCLE INTERVIEWS</a>
+    <a href="https://www.youtube.com/results?search_query=Bloomberg+Pursuits+luxury" target="_blank" class="secondary-btn" style="text-decoration:none; text-align:center; display:block;">💎 BLOOMBERG PURSUITS</a>
+    <button class="speak-btn save-btn" style="margin-top:14px;" onclick="markDone('shadow'); toast('Shadowing done ✓'); closeModal();">✓ MARK DONE</button>
+  `);
+}
+
+function moduleListen() {
+  openModal(`
+    <div class="modal-title">LISTENING</div>
+    <div style="font-size:13px; color:var(--text-dim); margin-bottom:14px; line-height:1.6;">
+      Pick one. Press play. Put in earbuds. Done.
+    </div>
+    <a href="https://open.spotify.com/search/Monocle%20Entrepreneurs" target="_blank" class="speak-btn" style="text-decoration:none; text-align:center; display:block;">🎙️ MONOCLE: ENTREPRENEURS</a>
+    <a href="https://open.spotify.com/search/How%20I%20Built%20This" target="_blank" class="secondary-btn" style="text-decoration:none; text-align:center; display:block;">🚀 HOW I BUILT THIS</a>
+    <a href="https://open.spotify.com/search/HBR%20IdeaCast" target="_blank" class="secondary-btn" style="text-decoration:none; text-align:center; display:block;">📊 HBR IDEACAST</a>
+    <a href="https://open.spotify.com/search/Bloomberg%20Pursuits" target="_blank" class="secondary-btn" style="text-decoration:none; text-align:center; display:block;">💎 BLOOMBERG PURSUITS</a>
+    <button class="speak-btn save-btn" style="margin-top:14px;" onclick="markDone('listen'); toast('Listening tracked ✓'); closeModal();">✓ MARK DONE</button>
+  `);
+}
+
+function moduleRoleplay() {
+  openModal(`
+    <div class="modal-title">CHATGPT ROLEPLAY · WEEKEND</div>
+    <div style="font-size:13px; color:var(--text-dim); margin-bottom:14px; line-height:1.6;">
+      Pick scenario → Copy prompt → Open ChatGPT → Paste → Begin.
+    </div>
+    <button class="speak-btn" onclick="copyAndOpen('meeting')">🤝 BUSINESS MEETING (Mr. Tan)</button>
+    <button class="speak-btn" onclick="copyAndOpen('smalltalk')">💬 SMALL TALK (Ibu Sari)</button>
+    <button class="speak-btn" onclick="copyAndOpen('negotiation')">💸 PRICE NEGOTIATION (Pak Budi)</button>
+    <div style="font-size:11px; color:var(--text-dim); text-align:center; margin-top:10px;">Prompt is auto-copied. Tap "Open ChatGPT" then paste.</div>
+  `);
+}
+
+function copyAndOpen(scenario) {
+  const prompt = ROLEPLAY_PROMPTS[scenario];
+  navigator.clipboard.writeText(prompt).then(() => {
+    toast('Prompt copied ✓');
+    setTimeout(() => { window.open('https://chat.openai.com', '_blank'); }, 500);
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = prompt;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    toast('Prompt copied ✓');
+    setTimeout(() => { window.open('https://chat.openai.com', '_blank'); }, 500);
+  });
+}
+
+function moduleDiary() {
+  const today = todayKey();
+  const existing = getStorage('diary_' + today, { a:'', b:'', c:'' });
+  openModal(`
+    <div class="modal-title">3-LINE DIARY · ${today}</div>
+    <div class="label">① WHAT I DID TODAY</div>
+    <textarea id="d_a" placeholder="What I checked off...">${existing.a}</textarea>
+    <div class="label">② WHAT WORKED · INSIGHT</div>
+    <textarea id="d_b" placeholder="What clicked...">${existing.b}</textarea>
+    <div class="label">③ TOMORROW'S FOCUS</div>
+    <textarea id="d_c" placeholder="One thing to remember...">${existing.c}</textarea>
+    <button class="speak-btn save-btn" style="margin-top:14px;" onclick="saveDiary()">✓ SAVE & DONE</button>
+  `);
+}
+
+function saveDiary() {
+  const today = todayKey();
+  const data = {
+    a: document.getElementById('d_a').value,
+    b: document.getElementById('d_b').value,
+    c: document.getElementById('d_c').value,
+    ts: new Date().toISOString()
+  };
+  setStorage('diary_' + today, data);
+  markDone('diary');
+  toast('Saved ✓');
+  closeModal();
+}
+
+function moduleEmergency() {
+  openModal(`
+    <div class="modal-title">2-MINUTE EMERGENCY MODE</div>
+    <div style="font-size:14px; line-height:1.8; padding:8px 0 18px;">
+      <div style="color:var(--gold); margin-bottom:10px;">FOR BUSY DAYS — PRESERVE STREAK</div>
+      <div style="color:var(--text); font-size:15px; line-height:1.8;">
+        ① Speak aloud 3x:<br>
+        <span style="color:var(--gold); font-style:italic;">"Japan grows some of the world's most beautiful flowers. I'm Zacky. I'm here to change that."</span><br><br>
+        ② Recall in your head:<br>
+        <span style="color:var(--gold); font-style:italic;">"Tell me about CAVIN."</span><br>
+        → Direct growers + FedEx = world's freshest Japan flowers.<br><br>
+        ③ Done. Streak preserved. ✓
+      </div>
+    </div>
+    <button class="speak-btn" onclick="speak(\`Japan grows some of the world's most beautiful flowers. I'm Zacky. I'm here to change that.\`, 0.85)">🔊 LISTEN</button>
+    <button class="speak-btn save-btn" onclick="markDone('declaration'); markDone('hook'); toast('Streak preserved ✓'); closeModal();">✓ DONE</button>
+  `);
+}
+
+function moduleHistory() {
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('diary_')).sort().reverse();
+  let html = `<div class="modal-title">DIARY HISTORY · ${keys.length} ENTRIES</div>`;
+  if (keys.length === 0) {
+    html += `<div style="color:var(--text-dim); text-align:center; padding:40px 0;">No entries yet. Start tonight 🌙</div>`;
+  } else {
+    keys.slice(0, 30).forEach(k => {
+      const d = getStorage(k, {});
+      const date = k.replace('diary_','');
+      html += `
+        <div class="diary-entry">
+          <div class="diary-date">${date}</div>
+          <div class="diary-text">① ${d.a || '—'}\n② ${d.b || '—'}\n③ ${d.c || '—'}</div>
+        </div>
+      `;
+    });
+  }
+  openModal(html);
+}
+
+//====== INIT ======
+updateUI();
+setInterval(updateUI, 30000); // 30秒ごとに更新
+// voices preload
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = () => {};
+  window.speechSynthesis.getVoices();
+}
+// modal close on outer click
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target.id === 'modal') closeModal();
+});
+</script>
+</body>
+</html>
