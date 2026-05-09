@@ -6,10 +6,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CAVIN English">
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#fff8ee">
 <title>CAVIN English</title>
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230a0a0a'/%3E%3Ctext x='90' y='115' font-size='90' text-anchor='middle' fill='%23d4af37'%3E🌸%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23fff8ee'/%3E%3Ctext x='90' y='130' font-size='110' text-anchor='middle'%3E🌸%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -18,7 +18,7 @@
 <div class="container">
   <header>
     <div class="logo">CAVIN</div>
-    <div class="brand">English Companion</div>
+    <div class="brand">English</div>
     <div class="subtitle" id="dateLabel"></div>
   </header>
 
@@ -57,32 +57,32 @@
 
   <div class="section-title">PRACTICE</div>
   <div class="menu-grid">
-    <button class="menu-item" onclick="App.openModule('shadowing-hub')">
+    <button class="menu-item tile-pink" onclick="App.openModule('shadowing-hub')">
       <div class="menu-icon">🎬</div>
       <div class="menu-name">Shadowing</div>
       <div class="menu-desc">50× / 20× drill</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('vocab-list')">
+    <button class="menu-item tile-blue" onclick="App.openModule('vocab-list')">
       <div class="menu-icon">📚</div>
       <div class="menu-name">Vocabulary</div>
       <div class="menu-desc">Forgetting curve</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('scenes')">
+    <button class="menu-item tile-green" onclick="App.openModule('scenes')">
       <div class="menu-icon">🎭</div>
-      <div class="menu-name">Scene Phrases</div>
-      <div class="menu-desc">Meeting / Meal / Talk</div>
+      <div class="menu-name">Scenes</div>
+      <div class="menu-desc">Meeting / Meal</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('voice-roleplay')">
+    <button class="menu-item tile-purple" onclick="App.openModule('voice-roleplay')">
       <div class="menu-icon">🗣️</div>
-      <div class="menu-name">Voice Roleplay</div>
-      <div class="menu-desc">In-app AI talk</div>
+      <div class="menu-name">Voice Talk</div>
+      <div class="menu-desc">In-app AI</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('dashboard')">
+    <button class="menu-item tile-yellow" onclick="App.openModule('dashboard')">
       <div class="menu-icon">📊</div>
-      <div class="menu-name">Dashboard</div>
-      <div class="menu-desc">Progress visual</div>
+      <div class="menu-name">Progress</div>
+      <div class="menu-desc">XP & streaks</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('flash-random')">
+    <button class="menu-item tile-orange" onclick="App.openModule('flash-random')">
       <div class="menu-icon">🃏</div>
       <div class="menu-name">Random Flash</div>
       <div class="menu-desc">28-card drill</div>
@@ -91,42 +91,42 @@
 
   <div class="section-title">QUICK ACCESS</div>
   <div class="menu-grid">
-    <button class="menu-item" onclick="App.openModule('declaration')">
+    <button class="menu-item tile-pink" onclick="App.openModule('declaration')">
       <div class="menu-icon">🪞</div>
       <div class="menu-name">Declaration</div>
       <div class="menu-desc">Identity reset</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('hook')">
+    <button class="menu-item tile-pink" onclick="App.openModule('hook')">
       <div class="menu-icon">🌸</div>
-      <div class="menu-name">Self Intro Hook</div>
-      <div class="menu-desc">Practice anytime</div>
+      <div class="menu-name">Hook</div>
+      <div class="menu-desc">Self intro</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('phrase-today')">
+    <button class="menu-item tile-blue" onclick="App.openModule('phrase-today')">
       <div class="menu-icon">📝</div>
       <div class="menu-name">Today's Phrase</div>
       <div class="menu-desc">Daily one-liner</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('listen')">
+    <button class="menu-item tile-green" onclick="App.openModule('listen')">
       <div class="menu-icon">🎧</div>
       <div class="menu-name">Listen</div>
-      <div class="menu-desc">Podcast launcher</div>
+      <div class="menu-desc">Podcasts</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('roleplay')">
+    <button class="menu-item tile-purple" onclick="App.openModule('roleplay')">
       <div class="menu-icon">💼</div>
-      <div class="menu-name">ChatGPT Roleplay</div>
-      <div class="menu-desc">Weekend deep talk</div>
+      <div class="menu-name">ChatGPT</div>
+      <div class="menu-desc">Weekend talk</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('diary')">
+    <button class="menu-item tile-yellow" onclick="App.openModule('diary')">
       <div class="menu-icon">📔</div>
       <div class="menu-name">Diary</div>
       <div class="menu-desc">3-line reflection</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('emergency')">
+    <button class="menu-item tile-orange" onclick="App.openModule('emergency')">
       <div class="menu-icon">🚨</div>
       <div class="menu-name">2-Min Mode</div>
       <div class="menu-desc">When too busy</div>
     </button>
-    <button class="menu-item" onclick="App.openModule('history')">
+    <button class="menu-item tile-blue" onclick="App.openModule('history')">
       <div class="menu-icon">📓</div>
       <div class="menu-name">History</div>
       <div class="menu-desc">Past diaries</div>
@@ -146,12 +146,12 @@
   </div>
 </div>
 
-<script src="data.js?v=2"></script>
-<script src="storage.js?v=2"></script>
-<script src="speech.js?v=2"></script>
-<script src="vocab.js?v=2"></script>
-<script src="shadowing.js?v=2"></script>
-<script src="modules.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="data.js?v=3"></script>
+<script src="storage.js?v=3"></script>
+<script src="speech.js?v=3"></script>
+<script src="vocab.js?v=3"></script>
+<script src="shadowing.js?v=3"></script>
+<script src="modules.js?v=3"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

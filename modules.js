@@ -79,18 +79,18 @@ const Modules = {
 
   // ========== シャドーイングHub ==========
   shadowingHub() {
-    const shortList = SHADOW_BANK.short.map((s, i) => `
-      <div class="vocab-item" onclick="Shadowing.start(\`${s.text.replace(/`/g,"'")}\`, 1); setTimeout(()=>Shadowing.render(), 100);">
-        <div>
+    const shortList = SHADOW_BANK.short.map((s) => `
+      <div class="vocab-item" onclick="Shadowing.start(\`${s.text.replace(/`/g,"'")}\`, 1);">
+        <div style="flex:1; min-width:0;">
           <div class="vocab-word" style="font-size:14px;">${s.text}</div>
           <div class="vocab-jp">SHORT · 50×</div>
         </div>
         <div class="vocab-due new">START</div>
       </div>
     `).join('');
-    const longList = SHADOW_BANK.long.map((s, i) => `
-      <div class="vocab-item" onclick="Shadowing.start(\`${s.text.replace(/`/g,"'")}\`, 2); setTimeout(()=>Shadowing.render(), 100);">
-        <div style="flex:1;">
+    const longList = SHADOW_BANK.long.map((s) => `
+      <div class="vocab-item" onclick="Shadowing.start(\`${s.text.replace(/`/g,"'")}\`, 2);">
+        <div style="flex:1; min-width:0;">
           <div class="vocab-word" style="font-size:13px; line-height:1.5;">${s.text.substring(0, 80)}${s.text.length > 80 ? '...' : ''}</div>
           <div class="vocab-jp">LONG · 20×</div>
         </div>
@@ -99,10 +99,11 @@ const Modules = {
     `).join('');
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">SHADOWING DRILL</div>
-      <div style="font-size:13px; color: var(--text-dim); margin-bottom: 14px; line-height:1.6;">
+      <div style="font-size:13px; color: var(--text-soft); margin-bottom: 14px; line-height:1.6; font-weight:800;">
         Pick a sentence. Repeat until your mouth knows it.<br>
-        Short: 50×  ·  Long: 20×
+        Short = 50×  ·  Long = 20×
       </div>
+      <button class="btn-primary btn-purple" onclick="Shadowing.customStart()">✏️ CUSTOM TEXT</button>
       <div class="section-title" style="margin: 14px 0 8px;">📝 SHORT SENTENCES</div>
       ${shortList}
       <div class="section-title" style="margin: 18px 0 8px;">📜 LONG PASSAGES</div>
