@@ -12,12 +12,14 @@ const App = {
     });
     // Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=6').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=7').catch(() => {});
     }
     // 起動時にアチーブメントチェック
     setTimeout(() => this.checkAchievements(), 800);
     // PWA + iOSマイク警告
     this.checkMicEnvironment();
+    // 月曜自動レポート
+    if (typeof Modules !== 'undefined' && Modules.checkAutoReport) Modules.checkAutoReport();
   },
 
   checkMicEnvironment() {
@@ -269,6 +271,9 @@ const App = {
       case 'timeline': Modules.timeline(); break;
       case 'weekly-report': Modules.weeklyReport(); break;
       case 'chatgpt-api': Modules.chatgptApi(); break;
+      case 'daily-flow': Modules.dailyFlow(); break;
+      case 'live-talk': Modules.liveTalk(); break;
+      case 'report-settings': Modules.reportSettings(); break;
       default:
         document.getElementById('modalBody').innerHTML = `<div class="modal-title">COMING SOON</div><button class="btn-primary" onclick="App.closeModal()">CLOSE</button>`;
     }

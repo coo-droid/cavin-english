@@ -909,6 +909,594 @@ const Modules = {
     );
   },
 
+  // ===========================================
+  // ☀️ 朝の一発スタート（Daily Flow）
+  // タップ1回で「シャドー→発音チェック→メディア→日記」を連結
+  // ===========================================
+  dailyFlowState: null,
+
+  dailyFlow() {
+    // 既存進行中なら復帰、なければ初期化
+    const today = Storage.todayKey();
+    let saved = Storage.get('dailyFlow_' + today, null);
+    if (!saved) {
+      saved = { step: 0, startedAt: new Date().toISOString(), xpAccumulated: 0 };
+      Storage.set('dailyFlow_' + today, saved);
+    }
+    this.dailyFlowState = saved;
+    this.renderDailyFlow();
+  },
+
+  renderDailyFlow() {
+    const steps = [
+      { idx: 0, icon: '🪞', name: 'Declaration', desc: '今日のアイデンティティ宣言（10秒）', xp: 5 },
+      { idx: 1, icon: '🎬', name: 'Shadowing Session', desc: '短文2 + 長文1（自動選択）', xp: 60 },
+      { idx: 2, icon: '📊', name: 'Pronunciation Check', desc: '発音をチェック（録音→AI判定）', xp: 5 },
+      { idx: 3, icon: '🎧', name: "Today's Media", desc: '今日のおすすめポッドキャスト＆動画', xp: 15 },
+      { idx: 4, icon: '📔', name: '3-Line Diary', desc: '今日の振り返り3行', xp: 15 },
+    ];
+    const s = this.dailyFlowState;
+    const total = steps.length;
+    const pct = Math.min(100, (s.step / total) * 100);
+    const isComplete = s.step >= total;
+
+    // 完了時：祝祭画面
+    if (isComplete) {
+      const totalXp = steps.reduce((sum, st) => sum + st.xp, 0);
+      App.confetti(80);
+      document.getElementById('modalBody').innerHTML = `
+        <div class="modal-title">DAILY FLOW COMPLETE</div>
+        <div class="burst-card">
+          <div class="burst-emoji">🌸</div>
+          <div class="burst-title">Mission accomplished!</div>
+          <div class="burst-msg">5 steps · all done · ${totalXp} total XP</div>
+        </div>
+        <div style="background: var(--bg-soft); border-radius: 14px; padding: 14px; margin: 12px 0; text-align: center;">
+          <div style="font-size: 12px; color: var(--text-soft); font-weight: 900; letter-spacing: 1px; margin-bottom: 6px;">TODAY'S BUILDUP</div>
+          <div style="font-size: 14px; color: var(--text); font-weight: 800; line-height: 1.6;">
+            Today's Zacky is one step closer to Jakarta.<br>
+            Your mouth, ear, and mind all moved forward.
+          </div>
+        </div>
+        <button class="btn-primary btn-success" onclick="App.closeModal()">CLOSE 💪</button>
+      `;
+      return;
+    }
+
+    const stepsHtml = steps.map((st, i) => {
+      const done = s.step > i;
+      const current = s.step === i;
+      return `
+        <div class="flow-step ${done ? 'flow-done' : ''} ${current ? 'flow-current' : ''}">
+          <div class="flow-icon">${done ? '✓' : st.icon}</div>
+          <div class="flow-info">
+            <div class="flow-name">${st.name}</div>
+            <div class="flow-desc">${st.desc}</div>
+          </div>
+          <div class="flow-xp">+${st.xp} XP</div>
+        </div>
+      `;
+    }).join('');
+
+    const cur = steps[s.step];
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">☀️ DAILY FLOW · ${s.step}/${total}</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY DAILY FLOW</div>
+        <div class="why-text">5ステップを連結。タップ1回で完了まで誘導。考える時間ゼロ、続けるだけでネイティブに近づく。</div>
+        <div class="why-impact">→ 完全自動・迷いなし・最大効率</div>
+      </div>
+      <div class="progress-bar" style="height: 12px; margin-bottom: 14px;">
+        <div class="progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="flow-steps">${stepsHtml}</div>
+      <div class="flow-current-card">
+        <div style="font-size: 11px; color: var(--text-soft); font-weight: 900; letter-spacing: 1px; margin-bottom: 6px;">UP NEXT</div>
+        <div style="font-size: 18px; font-weight: 900; color: var(--text); margin-bottom: 4px;">${cur.icon} ${cur.name}</div>
+        <div style="font-size: 13px; color: var(--text-soft); font-weight: 800; line-height: 1.5;">${cur.desc}</div>
+      </div>
+      <button class="btn-primary btn-pink" onclick="Modules.startDailyFlowStep(${s.step})">▶ START STEP ${s.step + 1}</button>
+      <button class="btn-secondary" onclick="if(confirm('Reset today\\'s flow?')){Storage.set('dailyFlow_${Storage.todayKey()}', {step:0, startedAt: new Date().toISOString(), xpAccumulated:0}); Modules.dailyFlow();}">🔁 RESTART</button>
+      <button class="btn-secondary" onclick="App.closeModal()">PAUSE FOR LATER</button>
+    `;
+  },
+
+  // 各ステップを起動。完了時に自動でnext
+  startDailyFlowStep(step) {
+    // ステップごとの誘導：その機能を起動。完了時に dailyFlowAdvance() を呼ぶように
+    window._inDailyFlow = true;
+    window._dailyFlowStep = step;
+
+    if (step === 0) {
+      // Declaration — 完了でadvance
+      const onDone = () => { this.dailyFlowAdvance(); };
+      document.getElementById('modalBody').innerHTML = `
+        <div class="modal-title">☀️ STEP 1/5 · MORNING DECLARATION</div>
+        <div class="why-card">
+          <div class="why-label">🎯 WHY THIS</div>
+          <div class="why-text">${PURPOSE.declaration.why}</div>
+          <div class="why-impact">${PURPOSE.declaration.impact}</div>
+        </div>
+        <div class="declaration">"${DECLARATION}"</div>
+        <button class="btn-primary" onclick="Speech.speak('${DECLARATION}', 0.85)">🔊 LISTEN</button>
+        <button class="btn-primary btn-success" onclick="Storage.markDone('declaration'); Modules.dailyFlowAdvance(5);">✓ I DECLARED · NEXT →</button>
+        <button class="btn-secondary" onclick="Modules.dailyFlow()">← BACK TO FLOW</button>
+      `;
+      setTimeout(() => Speech.speak(DECLARATION, 0.85), 400);
+      return;
+    }
+
+    if (step === 1) {
+      // Shadowing Session — 完了時に Shadowing.completeSession() で advance
+      window._dailyFlowAfterShadow = true;
+      Shadowing.startSession();
+      return;
+    }
+
+    if (step === 2) {
+      // Pronunciation Check — 自由発音チェック画面
+      this.dailyFlowPronunciation();
+      return;
+    }
+
+    if (step === 3) {
+      // Today's Media — listenモジュールに「次へ」ボタン埋め込み
+      this.dailyFlowMedia();
+      return;
+    }
+
+    if (step === 4) {
+      // Diary — 完了時にadvance
+      this.dailyFlowDiary();
+      return;
+    }
+  },
+
+  dailyFlowAdvance(xp) {
+    if (xp) Storage.addXP(xp);
+    const today = Storage.todayKey();
+    const s = Storage.get('dailyFlow_' + today, { step: 0 });
+    s.step = (s.step || 0) + 1;
+    Storage.set('dailyFlow_' + today, s);
+    this.dailyFlowState = s;
+    window._inDailyFlow = (s.step < 5);
+    this.dailyFlow();
+  },
+
+  // フロー内のシャドーイング完了フック（Shadowing.completeSession内から呼ぶ）
+  onDailyFlowShadowComplete() {
+    if (!window._dailyFlowAfterShadow) return false;
+    window._dailyFlowAfterShadow = false;
+    setTimeout(() => this.dailyFlowAdvance(), 1500);
+    return true;
+  },
+
+  dailyFlowPronunciation() {
+    // フロー専用の発音チェック画面（自己紹介Hookを練習）
+    const target = "Japan grows some of the most beautiful flowers in the world. I'm Zacky, and I'm here to change that.";
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">☀️ STEP 3/5 · PRONUNCIATION CHECK</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">${PURPOSE.pronunciation.why}</div>
+        <div class="why-impact">${PURPOSE.pronunciation.impact}</div>
+      </div>
+      <div class="shadow-text">${target}</div>
+      <div class="lesson-jp">
+        <div class="lesson-label">🇯🇵 JAPANESE</div>
+        <div class="lesson-text">日本は世界で最も美しい花の一部を育てています。私はザキ。それを変えるためにここに来ました。</div>
+      </div>
+      <button class="btn-primary" onclick="Speech.speak(\`${target.replace(/`/g,"'")}\`, 0.85)">🔊 LISTEN FIRST</button>
+      <button class="btn-primary btn-pink" id="dfPronStartBtn">📊 CHECK MY PRONUNCIATION</button>
+      <div id="dfPronArea"></div>
+      <button class="btn-secondary" onclick="Modules.dailyFlowAdvance(5);">⏭ SKIP & NEXT →</button>
+      <button class="btn-secondary" onclick="Modules.dailyFlow()">← BACK TO FLOW</button>
+    `;
+    document.getElementById('dfPronStartBtn').onclick = async () => {
+      Speech.cancel();
+      Speech.stopRecognition();
+      await new Promise(r => setTimeout(r, 250));
+      const area = document.getElementById('dfPronArea');
+      if (Storage.hasApiKey()) {
+        area.innerHTML = `
+          <div style="text-align:center; padding: 18px; background: var(--bg-soft); border-radius: 14px; margin-bottom: 10px;">
+            <div style="font-size: 40px; margin-bottom: 6px;">🎙️</div>
+            <div style="color: var(--info); font-weight: 900; font-size: 14px;">RECORDING... READ THE SENTENCE</div>
+          </div>
+          <button class="btn-primary btn-danger" id="dfStopBtn">⏹ STOP & ANALYZE</button>
+        `;
+        try {
+          await Speech.startRecording();
+          document.getElementById('dfStopBtn').onclick = async () => {
+            area.innerHTML = `<div style="text-align:center; padding: 18px;"><div style="font-size:30px;">🤖</div><div style="margin-top:6px; color:var(--info); font-weight:900;">Analyzing...</div></div>`;
+            try {
+              const data = await Speech.stopRecording();
+              const transcript = await Speech.transcribeWithWhisper(data.blob, data.mime);
+              const diff = Speech.computeDiff(target, transcript);
+              Storage.recordEvent('pronunciation_check');
+              Shadowing.renderDiff && Shadowing.renderDiff(transcript, diff);
+              area.innerHTML = `
+                <div style="background: ${diff.score >= 80 ? '#e8ffd9' : diff.score >= 50 ? '#fff7e0' : '#ffe9e9'}; border-radius: 16px; padding: 18px; margin-bottom: 10px; text-align: center;">
+                  <div class="diff-score ${diff.score < 50 ? 'low' : diff.score < 80 ? 'mid' : ''}">${diff.score}</div>
+                  <div class="diff-score-label">PRONUNCIATION SCORE</div>
+                </div>
+                <button class="btn-primary btn-success" onclick="Modules.dailyFlowAdvance(5);">✓ NEXT STEP →</button>
+              `;
+            } catch (e) {
+              area.innerHTML = `<div style="background:#ffe9e9; border:2px solid var(--danger); border-radius:14px; padding:14px; color:var(--danger-dark); font-weight:800;">Analysis failed: ${e.message}</div><button class="btn-primary btn-success" onclick="Modules.dailyFlowAdvance(5);">SKIP & NEXT →</button>`;
+            }
+          };
+        } catch (e) {
+          area.innerHTML = `<div style="background:#ffe9e9; border:2px solid var(--danger); border-radius:14px; padding:14px; color:var(--danger-dark); font-weight:800;">Mic error. Please grant mic permission.</div><button class="btn-primary btn-success" onclick="Modules.dailyFlowAdvance(5);">SKIP & NEXT →</button>`;
+        }
+        return;
+      }
+      // Web Speech APIフォールバック
+      area.innerHTML = `<div style="text-align:center; padding: 18px;"><div style="font-size:30px;">🎤</div><div style="margin-top:6px; color:var(--info); font-weight:900;">LISTENING...</div></div>`;
+      Speech.startRecognition(
+        (transcript) => {
+          const diff = Speech.computeDiff(target, transcript);
+          Storage.recordEvent('pronunciation_check');
+          area.innerHTML = `
+            <div style="background: ${diff.score >= 80 ? '#e8ffd9' : diff.score >= 50 ? '#fff7e0' : '#ffe9e9'}; border-radius: 16px; padding: 18px; margin-bottom: 10px; text-align: center;">
+              <div class="diff-score ${diff.score < 50 ? 'low' : diff.score < 80 ? 'mid' : ''}">${diff.score}</div>
+              <div class="diff-score-label">PRONUNCIATION SCORE</div>
+            </div>
+            <button class="btn-primary btn-success" onclick="Modules.dailyFlowAdvance(5);">✓ NEXT STEP →</button>
+          `;
+        },
+        (err) => {
+          area.innerHTML = `<div style="background:#ffe9e9; border:2px solid var(--danger); border-radius:14px; padding:14px; color:var(--danger-dark); font-weight:800;">${err}</div><button class="btn-primary btn-success" onclick="Modules.dailyFlowAdvance(5);">SKIP & NEXT →</button>`;
+        }
+      );
+    };
+  },
+
+  dailyFlowMedia() {
+    const day = new Date().getDay();
+    const media = DAILY_MEDIA[day];
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">☀️ STEP 4/5 · TODAY'S MEDIA</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">毎日違うテーマで自動推薦。あなたが教材を探す時間ゼロ。</div>
+        <div class="why-impact">→ 完全自動・選ぶストレスなし</div>
+      </div>
+      <div class="media-card media-podcast">
+        <div class="media-type">🎙️ PODCAST · ${media.podcast.duration}</div>
+        <div class="media-title">${media.podcast.title}</div>
+        <div class="media-listen"><span class="media-listen-label">📍 LISTEN:</span> ${media.podcast.listen}</div>
+        <div class="media-why">${media.podcast.why}</div>
+        <a href="${media.podcast.search || media.podcast.url}" target="_blank" class="btn-primary" style="text-decoration:none; text-align:center; display:block;">🔗 OPEN PODCAST</a>
+      </div>
+      <div class="media-card media-video">
+        <div class="media-type">🎬 VIDEO · ${media.video.duration}</div>
+        <div class="media-title">${media.video.title}</div>
+        <div class="media-listen"><span class="media-listen-label">📍 WATCH:</span> ${media.video.watch}</div>
+        <div class="media-why">${media.video.why}</div>
+        <a href="${media.video.url}" target="_blank" class="btn-primary btn-pink" style="text-decoration:none; text-align:center; display:block;">🔗 OPEN VIDEO</a>
+      </div>
+      <button class="btn-primary btn-success" onclick="Storage.markDone('listen'); Modules.dailyFlowAdvance(15);">✓ I LISTENED · NEXT →</button>
+      <button class="btn-secondary" onclick="Modules.dailyFlowAdvance(0);">⏭ SKIP & NEXT</button>
+      <button class="btn-secondary" onclick="Modules.dailyFlow()">← BACK TO FLOW</button>
+    `;
+  },
+
+  dailyFlowDiary() {
+    const today = Storage.todayKey();
+    const existing = Storage.get('diary_' + today, { a:'', b:'', c:'' });
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">☀️ STEP 5/5 · 3-LINE DIARY</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">${PURPOSE.diary.why}</div>
+        <div class="why-impact">${PURPOSE.diary.impact}</div>
+      </div>
+      <div class="label">① WHAT I DID TODAY</div>
+      <textarea id="df_a" placeholder="What I checked off...">${existing.a}</textarea>
+      <div class="label">② WHAT WORKED · INSIGHT</div>
+      <textarea id="df_b" placeholder="What clicked...">${existing.b}</textarea>
+      <div class="label">③ TOMORROW'S FOCUS</div>
+      <textarea id="df_c" placeholder="One thing to remember...">${existing.c}</textarea>
+      <button class="btn-primary btn-success" onclick="Modules.dailyFlowSaveDiary()">✓ SAVE & FINISH FLOW 🌸</button>
+      <button class="btn-secondary" onclick="Modules.dailyFlowAdvance(0);">⏭ SKIP & FINISH</button>
+    `;
+  },
+
+  dailyFlowSaveDiary() {
+    const today = Storage.todayKey();
+    Storage.set('diary_' + today, {
+      a: document.getElementById('df_a').value,
+      b: document.getElementById('df_b').value,
+      c: document.getElementById('df_c').value,
+      ts: new Date().toISOString()
+    });
+    Storage.markDone('diary');
+    this.dailyFlowAdvance(15);
+  },
+
+  // ===========================================
+  // 🎙️ GPT-4o リアルタイム会話
+  // ===========================================
+  liveTalkState: null,
+
+  liveTalk() {
+    if (!Storage.hasApiKey()) {
+      document.getElementById('modalBody').innerHTML = `
+        <div class="modal-title">LIVE VOICE TALK</div>
+        <div class="why-card">
+          <div class="why-label">🎯 WHY LIVE TALK</div>
+          <div class="why-text">本物の会話練習。AIが音声で応答してくる。録音→文字起こし→応答→音声再生をループ。商談本番に最も近い体験。</div>
+          <div class="why-impact">→ 想定外の質問への臨機応変力</div>
+        </div>
+        <div class="api-card">
+          <div class="api-status">⚙️ OPENAI API KEY REQUIRED</div>
+          <div style="font-size: 12px; color: var(--text); font-weight: 700; line-height: 1.5; margin-bottom: 10px;">
+            この機能はWhisper（音声認識）+ GPT-4o（応答）+ TTSを使います。<br>
+            APIキーをAI Tutor画面で先に設定してください。
+          </div>
+          <button class="btn-primary btn-success" onclick="App.openModule('chatgpt-api')">⚙️ SET API KEY</button>
+        </div>
+      `;
+      return;
+    }
+    const hist = Storage.get('live_chat_history', []);
+    const chatHtml = hist.length === 0
+      ? `<div class="chat-msg chat-ai">👋 Hi Zacky. I'm here to talk. Tap the mic and speak. I'll respond in voice.</div>`
+      : hist.map(m => `<div class="chat-msg chat-${m.role === 'user' ? 'user' : 'ai'}">${m.content}</div>`).join('');
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">🎙️ LIVE VOICE TALK · GPT-4o</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY LIVE TALK</div>
+        <div class="why-text">本物の会話練習。録音→AI文字起こし→AI応答→音声再生がループ。商談本番に最も近い。</div>
+        <div class="why-impact">→ 想定外質問への対応力</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="Modules.liveTalkScenario('meeting')">🤝 MEETING</button>
+        <button class="btn-secondary" onclick="Modules.liveTalkScenario('smalltalk')">💬 SMALL TALK</button>
+      </div>
+      <div class="chat-area" id="liveChatArea">${chatHtml}</div>
+      <div id="liveStatus" style="text-align:center; font-size: 12px; color: var(--text-soft); font-weight: 800; margin: 8px 0; min-height: 18px;"></div>
+      <button class="btn-primary btn-pink" id="liveTalkBtn" style="font-size: 16px; padding: 18px;">🎙️ TAP & HOLD TO SPEAK</button>
+      <button class="btn-secondary" onclick="Storage.set('live_chat_history', []); Modules.liveTalk();">🗑 CLEAR CHAT</button>
+    `;
+    // タップ操作
+    const btn = document.getElementById('liveTalkBtn');
+    let recording = false;
+    btn.onclick = async () => {
+      if (recording) {
+        recording = false;
+        btn.textContent = '⏳ PROCESSING...';
+        btn.disabled = true;
+        await this.liveTalkProcess();
+        btn.disabled = false;
+        btn.textContent = '🎙️ TAP TO SPEAK';
+      } else {
+        Speech.cancel();
+        await new Promise(r => setTimeout(r, 200));
+        try {
+          await Speech.startRecording();
+          recording = true;
+          btn.textContent = '⏹ TAP TO STOP';
+          btn.classList.add('btn-danger');
+          document.getElementById('liveStatus').textContent = '🔴 Recording... speak now';
+        } catch (e) {
+          App.toast('Mic error: ' + e.message);
+        }
+      }
+    };
+  },
+
+  liveTalkScenario(type) {
+    const prompts = {
+      meeting: "You are Mr. Tan, a 50yo Chinese-Indonesian luxury hotel owner in Jakarta. I'm Zacky from CAVIN selling premium Japanese flowers. Be skeptical but curious. Ask one short business question per turn (1-2 sentences max), in English. Stay in character.",
+      smalltalk: "You are Ibu Sari, a 45yo Indonesian fashion entrepreneur. We just met at a Jakarta carnival. Make natural small talk in English. Keep each turn short (1-2 sentences). Stay in character."
+    };
+    Storage.set('live_chat_history', [{ role: 'system', content: prompts[type] }]);
+    this.liveTalk();
+    setTimeout(() => this.liveTalkAiInitiate(), 200);
+  },
+
+  async liveTalkAiInitiate() {
+    const hist = Storage.get('live_chat_history', []);
+    if (hist.length !== 1) return;
+    const status = document.getElementById('liveStatus');
+    if (status) status.textContent = '🤖 Starting conversation...';
+    try {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-4o-mini', messages: [...hist, { role: 'user', content: 'Begin the scenario by greeting me first.' }], temperature: 0.7, max_tokens: 100 })
+      });
+      const data = await r.json();
+      const reply = data.choices[0].message.content;
+      hist.push({ role: 'assistant', content: reply });
+      Storage.set('live_chat_history', hist);
+      const area = document.getElementById('liveChatArea');
+      if (area) area.innerHTML += `<div class="chat-msg chat-ai">${reply}</div>`;
+      Speech.speak(reply, 0.95);
+      if (status) status.textContent = '';
+    } catch (e) {
+      if (status) status.textContent = 'Error starting scenario';
+    }
+  },
+
+  async liveTalkProcess() {
+    const status = document.getElementById('liveStatus');
+    const area = document.getElementById('liveChatArea');
+    try {
+      status.textContent = '🤖 Transcribing your voice...';
+      const data = await Speech.stopRecording();
+      if (!data || data.blob.size < 500) {
+        status.textContent = 'Too short. Try again.';
+        return;
+      }
+      const transcript = await Speech.transcribeWithWhisper(data.blob, data.mime);
+      if (!transcript.trim()) { status.textContent = 'No speech detected.'; return; }
+
+      const hist = Storage.get('live_chat_history', []);
+      hist.push({ role: 'user', content: transcript });
+      Storage.set('live_chat_history', hist);
+      area.innerHTML += `<div class="chat-msg chat-user">${transcript}</div>`;
+      area.scrollTop = area.scrollHeight;
+
+      status.textContent = '🤖 Thinking...';
+      const sysExists = hist.find(m => m.role === 'system');
+      const messages = sysExists ? hist : [{ role: 'system', content: 'You are a warm English conversation partner for Zacky, a Japanese businessman preparing for a luxury flower sales trip to Indonesia. Reply in 1-3 sentences, casual but encouraging. End with a question to keep the conversation flowing.' }, ...hist];
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-4o-mini', messages, temperature: 0.7, max_tokens: 150 })
+      });
+      if (!r.ok) {
+        status.textContent = 'API error: ' + r.status;
+        return;
+      }
+      const json = await r.json();
+      const reply = json.choices[0].message.content;
+      hist.push({ role: 'assistant', content: reply });
+      Storage.set('live_chat_history', hist);
+      area.innerHTML += `<div class="chat-msg chat-ai">${reply}</div>`;
+      area.scrollTop = area.scrollHeight;
+      status.textContent = '🔊 Speaking reply...';
+      Speech.speak(reply, 0.95, () => {
+        status.textContent = 'Your turn 🎙️';
+      });
+      Storage.recordEvent('live_talk_turn');
+      Storage.addXP(10);
+    } catch (e) {
+      status.textContent = 'Error: ' + e.message;
+    }
+  },
+
+  // ===========================================
+  // 📧 週次自動レポート（メール/Slack送信）
+  // ===========================================
+  reportSettings() {
+    const email = localStorage.getItem('reportEmail') || '';
+    const slack = localStorage.getItem('reportSlackWebhook') || '';
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">📧 WEEKLY REPORT SETTINGS</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY AUTO REPORT</div>
+        <div class="why-text">毎週月曜の朝に、先週の進捗が自動でメール/Slackに届く。自分で集計する手間ゼロ。</div>
+        <div class="why-impact">→ 振り返りの自動化</div>
+      </div>
+      <div class="label">YOUR EMAIL (optional)</div>
+      <input type="text" id="reportEmail" placeholder="you@example.com" value="${email}">
+      <div style="font-size: 11px; color: var(--text-soft); font-weight: 700; margin-bottom: 10px;">月曜のレポート画面で「Send Email」を押すとメールが下書きされます。</div>
+      <div class="label">SLACK WEBHOOK URL (optional)</div>
+      <input type="text" id="reportSlack" placeholder="https://hooks.slack.com/services/..." value="${slack}">
+      <div style="font-size: 11px; color: var(--text-soft); font-weight: 700; margin-bottom: 10px;">Slackで /apps → Incoming Webhooks → URLを発行してここに貼る。</div>
+      <button class="btn-primary btn-success" onclick="Modules.saveReportSettings()">✓ SAVE</button>
+      <button class="btn-primary" onclick="Modules.sendReportNow()">📤 SEND THIS WEEK'S REPORT NOW</button>
+      <button class="btn-secondary" onclick="App.openModule('weekly-report')">📈 VIEW WEEKLY REPORT</button>
+    `;
+  },
+
+  saveReportSettings() {
+    const email = document.getElementById('reportEmail').value.trim();
+    const slack = document.getElementById('reportSlack').value.trim();
+    if (email) localStorage.setItem('reportEmail', email);
+    else localStorage.removeItem('reportEmail');
+    if (slack) localStorage.setItem('reportSlackWebhook', slack);
+    else localStorage.removeItem('reportSlackWebhook');
+    App.toast('Settings saved ✓');
+  },
+
+  buildReportText() {
+    const dates = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      dates.push(`${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`);
+    }
+    const totalReps = dates.reduce((s, d) => s + Storage.getEvent('shadow_rep', d), 0);
+    const totalFlash = dates.reduce((s, d) => s + Storage.getEvent('flash_done', d), 0);
+    const totalReviews = dates.reduce((s, d) => s + Storage.getEvent('vocab_review', d), 0);
+    const totalPron = dates.reduce((s, d) => s + Storage.getEvent('pronunciation_check', d), 0);
+    const totalLive = dates.reduce((s, d) => s + Storage.getEvent('live_talk_turn', d), 0);
+    const totalDoneDays = dates.filter(d => (Storage.get('done_' + d, []).length > 0)).length;
+    const days = Storage.daysUntil(TARGET_DATE);
+    const xp = Storage.getXP();
+    const lv = Storage.getLevel();
+    const streak = parseInt(localStorage.getItem('streak') || '0');
+    return `
+📊 CAVIN English — Weekly Report
+${dates[0]} 〜 ${dates[6]}
+
+🎯 TO JAKARTA: ${days >= 0 ? days + ' days' : 'COMPLETED ✓'}
+
+📈 THIS WEEK
+• Active days: ${totalDoneDays}/7
+• Streak: 🔥 ${streak} days
+• Level: LV ${lv} (${xp} XP)
+
+💪 PRACTICE
+• Shadowing reps: ${totalReps}
+• Flash cards done: ${totalFlash}
+• Vocabulary reviews: ${totalReviews}
+• Pronunciation checks: ${totalPron}
+• Live AI conversations: ${totalLive} turns
+
+${totalDoneDays >= 6 ? '🔥 Iron week! You showed up.' :
+  totalDoneDays >= 4 ? '👍 Solid week. Build on this.' :
+  totalDoneDays >= 2 ? '💪 Some sparks. Push next week.' :
+  '🌱 Fresh start. Tomorrow is yours.'}
+
+— Sent from CAVIN English
+    `.trim();
+  },
+
+  async sendReportNow() {
+    const text = this.buildReportText();
+    const email = localStorage.getItem('reportEmail');
+    const slack = localStorage.getItem('reportSlackWebhook');
+    if (!email && !slack) {
+      App.toast('Set email or Slack first');
+      return;
+    }
+    let sentChannels = [];
+
+    if (email) {
+      // mailto:でメール下書きを開く
+      const subject = encodeURIComponent('CAVIN English Weekly Report — ' + Storage.todayKey());
+      const body = encodeURIComponent(text);
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+      sentChannels.push('Email drafted');
+    }
+
+    if (slack) {
+      try {
+        await fetch(slack, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
+        sentChannels.push('Slack sent');
+      } catch (e) {
+        sentChannels.push('Slack error');
+      }
+    }
+
+    App.toast(sentChannels.join(' · '));
+    localStorage.setItem('lastReportSent', Storage.todayKey());
+  },
+
+  // 月曜にレポートを自動表示（initで呼ぶ）
+  checkAutoReport() {
+    const today = new Date();
+    if (today.getDay() !== 1) return; // 月曜のみ
+    const lastReport = localStorage.getItem('lastReportShown');
+    if (lastReport === Storage.todayKey()) return; // 今日既に表示済み
+    // 表示
+    setTimeout(() => {
+      App.openModal();
+      Modules.weeklyReport();
+      localStorage.setItem('lastReportShown', Storage.todayKey());
+    }, 1500);
+  },
+
   async sendAiMessage(forceText) {
     const input = document.getElementById('aiChatInput');
     const text = forceText === '__start__' ? null : (forceText || (input ? input.value.trim() : ''));

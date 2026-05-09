@@ -91,6 +91,10 @@ const Shadowing = {
     `;
     App.toast('+' + xp + ' XP earned!', 'xp');
     setTimeout(() => App.checkAchievements(), 1500);
+    // Daily Flow連動：シャドーイング完了を検知して自動advance
+    if (window._dailyFlowAfterShadow && typeof Modules !== 'undefined' && Modules.onDailyFlowShadowComplete) {
+      Modules.onDailyFlowShadowComplete();
+    }
   },
 
   startTimer() {
