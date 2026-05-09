@@ -82,18 +82,22 @@ const Shadowing = {
     Storage.markDone('shadowing-hub');
     const target = this.state.target;
     const elapsed = this.formatTime(this.state.elapsedMs);
+    const xp = target * 2;
     this.state = null;
+    App.confetti(50);
+    Storage.addXP(xp);
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">YOU DID IT!</div>
-      <div class="mascot-success">🎉</div>
-      <div style="text-align:center; padding: 10px;">
-        <div style="font-size:32px; color: var(--success); margin-bottom: 6px; font-weight: 900;">${target} reps</div>
-        <div style="font-size:14px; color: var(--text-soft); font-weight: 800;">in ${elapsed}</div>
-        <div style="margin-top: 14px;"><span class="xp-badge">+${target * 2} XP</span></div>
+      <div class="burst-card">
+        <div class="burst-emoji">🎉</div>
+        <div class="burst-title">${target} reps · ${elapsed}</div>
+        <div class="burst-msg">Your mouth is changing.</div>
+        <div style="margin-top: 12px;"><span class="xp-badge" style="font-size: 14px; padding: 6px 16px;">+${xp} XP</span></div>
       </div>
-      <button class="btn-primary btn-success" onclick="App.closeModal()">AWESOME</button>
+      <button class="btn-primary btn-success" onclick="App.closeModal()">AWESOME 🔥</button>
     `;
-    App.toast('+' + (target * 2) + ' XP earned!');
+    App.toast('+' + xp + ' XP earned!', 'xp');
+    setTimeout(() => App.checkAchievements(), 1500);
   },
 
   async recordOnce() {

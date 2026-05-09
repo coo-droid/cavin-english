@@ -10,13 +10,99 @@ const App = {
     document.getElementById('modal').addEventListener('click', (e) => {
       if (e.target.id === 'modal') this.closeModal();
     });
+    // Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js?v=4').catch(() => {});
+    }
+    // 起動時にアチーブメントチェック
+    setTimeout(() => this.checkAchievements(), 800);
   },
 
-  toast(msg) {
+  toast(msg, type) {
     const t = document.getElementById('toast');
     t.textContent = msg;
+    t.style.background = type === 'xp' ? 'var(--accent)' :
+                        type === 'fire' ? 'var(--danger)' :
+                        'var(--success)';
+    t.style.borderBottomColor = type === 'xp' ? 'var(--accent-shadow)' :
+                                type === 'fire' ? 'var(--danger-shadow)' :
+                                'var(--success-shadow)';
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
+    setTimeout(() => t.classList.remove('show'), 2200);
+  },
+
+  // XPポップアニメ（タップ位置から数字が浮き上がる）
+  popXP(amount, x, y) {
+    const el = document.createElement('div');
+    el.className = 'xp-pop';
+    el.textContent = `+${amount} XP`;
+    el.style.left = (x || window.innerWidth / 2) + 'px';
+    el.style.top = (y || window.innerHeight / 2) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+  },
+
+  // 紙吹雪エフェクト
+  confetti(count = 30) {
+    const colors = ['#ff6f91', '#ffb84d', '#58cc02', '#1cb0f6', '#ce82ff', '#ffc800'];
+    for (let i = 0; i < count; i++) {
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.background = colors[i % colors.length];
+      c.style.left = Math.random() * 100 + 'vw';
+      c.style.animationDelay = (Math.random() * 0.6) + 's';
+      c.style.animationDuration = (1.6 + Math.random() * 1.5) + 's';
+      c.style.transform = `rotate(${Math.random() * 360}deg)`;
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 3500);
+    }
+    if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
+  },
+
+  // XP獲得（共通インターフェイス）
+  awardXP(amount, evt) {
+    const newTotal = Storage.addXP(amount);
+    if (evt && evt.clientX) this.popXP(amount, evt.clientX, evt.clientY);
+    this.toast(`+${amount} XP earned!`, 'xp');
+    this.checkAchievements();
+    this.updateUI();
+  },
+
+  // アチーブメントチェック→演出
+  checkAchievements() {
+    const newly = Storage.checkNewAchievements();
+    newly.forEach((a, i) => {
+      setTimeout(() => this.showAchievement(a), i * 1500);
+    });
+  },
+
+  showAchievement(a) {
+    this.confetti(40);
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">ACHIEVEMENT UNLOCKED</div>
+      <div class="burst-card">
+        <div class="burst-emoji">${a.icon}</div>
+        <div class="burst-title">${a.title}</div>
+        <div class="burst-msg">${a.msg}</div>
+      </div>
+      <button class="btn-primary btn-success" onclick="App.closeModal()">CONTINUE 💪</button>
+    `;
+    document.getElementById('modal').classList.add('active');
+  },
+
+  // 時間帯別の挨拶＆メッセージ
+  getHeroContent() {
+    const h = new Date().getHours();
+    let bucket = 'morning', greeting = 'GOOD MORNING';
+    if (h >= 5 && h < 11) { bucket = 'morning'; greeting = 'GOOD MORNING'; }
+    else if (h >= 11 && h < 17) { bucket = 'noon'; greeting = 'GOOD AFTERNOON'; }
+    else if (h >= 17 && h < 22) { bucket = 'evening'; greeting = 'GOOD EVENING'; }
+    else { bucket = 'late'; greeting = 'STILL UP?'; }
+    const msgs = HERO_MESSAGES[bucket];
+    // 日付をシードにして1日中同じメッセージ
+    const day = new Date().getDate();
+    const msg = msgs[day % msgs.length];
+    return { greeting, msg };
   },
 
   updateUI() {
@@ -25,12 +111,45 @@ const App = {
     document.getElementById('dateLabel').textContent =
       `${d.getFullYear()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getDate().toString().padStart(2,'0')}  ·  ${dayNames[d.getDay()]}`;
 
-    document.getElementById('streakNum').textContent = Storage.updateStreak();
+    // ヒーローカード
+    const hero = this.getHeroContent();
+    document.getElementById('heroGreeting').textContent = hero.greeting;
+    document.getElementById('heroMessage').textContent = hero.msg;
+
+    const streak = Storage.updateStreak();
+    document.getElementById('streakNum').textContent = streak;
     document.getElementById('todayCount').textContent = `${Storage.todayDoneCount()}/11`;
+    document.getElementById('heroStreak').textContent = `🔥 ${streak}`;
+    const xp = Storage.getXP();
+    document.getElementById('heroXp').textContent = `⭐ ${xp} XP`;
+    const lv = Storage.getLevel();
+    document.getElementById('heroLevel').textContent = `LV ${lv}`;
+
+    // レベルプログレスバー
+    const lvProg = Storage.getLevelProgress();
+    const lvLabel = document.getElementById('lvLabel');
+    const lvDetail = document.getElementById('lvDetail');
+    const lvProgress = document.getElementById('lvProgress');
+    if (lvLabel) lvLabel.textContent = `LEVEL ${lv}`;
+    if (lvDetail) lvDetail.textContent = `${lvProg.current} / ${lvProg.total} XP`;
+    if (lvProgress) lvProgress.style.width = lvProg.percent + '%';
+
+    // ストリークカードを連続日数で熱く
+    const streakCard = document.getElementById('streakNum').closest('.stat-card');
+    streakCard.classList.remove('streak-card-hot', 'streak-card-mega');
+    if (streak >= 14) streakCard.classList.add('streak-card-mega');
+    else if (streak >= 3) streakCard.classList.add('streak-card-hot');
+    if (streak >= 3) {
+      streakCard.querySelector('.stat-label').innerHTML = `<span class="streak-fire">🔥</span> STREAK`;
+    } else {
+      streakCard.querySelector('.stat-label').textContent = 'STREAK';
+    }
 
     // カウントダウン
     const days = Storage.daysUntil(TARGET_DATE);
     document.getElementById('countdownNum').textContent = days >= 0 ? days : '✓';
+    const cdCard = document.getElementById('countdownNum').closest('.stat-card');
+    cdCard.classList.toggle('urgent', days >= 0 && days <= 7);
 
     // ストーリーバナー
     const due = Vocab.due().length;
@@ -41,7 +160,7 @@ const App = {
       document.getElementById('storyBanner').style.display = 'none';
     }
 
-    // 「次にやるべき」表示
+    // 「次にやるべき」
     const cur = d.getHours() * 60 + d.getMinutes();
     let displayItem = SCHEDULE.find(s => s.mins >= cur && !Storage.isDone(s.key));
     if (!displayItem) displayItem = SCHEDULE.find(s => !Storage.isDone(s.key)) || SCHEDULE[0];
@@ -51,7 +170,7 @@ const App = {
     document.getElementById('nowDesc').textContent = displayItem.desc;
     document.getElementById('nowBtn').onclick = () => this.openModule(displayItem.key);
 
-    // スケジュールリスト
+    // スケジュール
     const list = document.getElementById('scheduleList');
     list.innerHTML = '';
     SCHEDULE.forEach(s => {
@@ -73,6 +192,11 @@ const App = {
   openModal(html) {
     if (html) document.getElementById('modalBody').innerHTML = html;
     document.getElementById('modal').classList.add('active');
+    // モーダル中身にpop-inクラス
+    setTimeout(() => {
+      const c = document.querySelector('.modal-content');
+      if (c) { c.classList.remove('pop-in'); void c.offsetWidth; c.classList.add('pop-in'); }
+    }, 10);
   },
 
   closeModal() {
@@ -81,11 +205,12 @@ const App = {
     if (Speech.mediaRecorder && Speech.mediaRecorder.state === 'recording') {
       Speech.stopRecording();
     }
+    if (Shadowing.timerInterval) Shadowing.stopTimer();
+    this.updateUI();
   },
 
   openModule(key, arg) {
     this.openModal();
-    // vocab-list-xxx 形式の対応
     if (key.startsWith('vocab-list-')) {
       Modules.vocabList(key.replace('vocab-list-', ''));
       return;
@@ -109,7 +234,7 @@ const App = {
       case 'flash-random': Modules.flashRandom(); break;
       case 'phrase-today': Modules.phraseToday(); break;
       case 'shadowing-hub': Modules.shadowingHub(); break;
-      case 'shadowing-active': /* シャドーイング進行中 */ break;
+      case 'shadowing-active': break;
       case 'scenes': Modules.scenes(); break;
       case 'voice-roleplay': Modules.voiceRoleplay(); break;
       case 'dashboard': Modules.dashboard(); break;
@@ -119,13 +244,15 @@ const App = {
       case 'diary': Modules.diary(); break;
       case 'emergency': Modules.emergency(); break;
       case 'history': Modules.history(); break;
+      case 'timeline': Modules.timeline(); break;
+      case 'weekly-report': Modules.weeklyReport(); break;
+      case 'chatgpt-api': Modules.chatgptApi(); break;
       default:
         document.getElementById('modalBody').innerHTML = `<div class="modal-title">COMING SOON</div><button class="btn-primary" onclick="App.closeModal()">CLOSE</button>`;
     }
   }
 };
 
-// 起動
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => App.init());
 } else {

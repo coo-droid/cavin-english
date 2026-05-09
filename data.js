@@ -365,3 +365,79 @@ const INITIAL_VOCAB = [
     { en: "Build for the moment, not the metric.", jp: "数字でなく瞬間のために作れ。" }
   ]},
 ];
+
+// =====================================================
+// 商談当日タイムライン（時系列シナリオ）
+// =====================================================
+const JAKARTA_TIMELINE = [
+  { time: '06:00', type: 'prep', icon: '🌅', title: 'Wake & Prepare',
+    desc: 'Shower, declaration, light breakfast. Wear suit jacket but loose. Pack: 50 cards, look book on phone, gifts.',
+    script: 'I am someone who speaks English with the world. Today, I represent Japan.' },
+  { time: '08:00', type: 'prep', icon: '🚗', title: 'Arrive Venue',
+    desc: 'Greet staff warmly. Stay relaxed. Smile to everyone — that\'s how high-status people behave.',
+    script: 'Selamat pagi! I\'m Zacky from CAVIN. Could you point me to the VIP area?' },
+  { time: '10:00', type: 'meeting', icon: '🌟', title: 'Carnival Floor — Soft Approach',
+    desc: 'Don\'t sell. Get 3-5 business cards. Find 2 people interested enough for lunch or dinner.',
+    script: 'I love the design you\'re wearing. Is it a local designer? I\'m Zacky, I came from Japan, working with luxury flowers.' },
+  { time: '12:30', type: 'meal', icon: '🍽️', title: 'Lunch Meeting #1',
+    desc: 'Wait until they sit. 20 min small talk first. Show flowers only when asked. End with: send sample arrangement.',
+    script: 'Thank you for making time. How was your morning? ... If you\'d like, I could prepare a small arrangement for you.' },
+  { time: '15:00', type: 'meeting', icon: '🎪', title: 'Back to Carnival',
+    desc: 'Reconnect with lunch contact. Be remembered for being the one who LISTENS. Ask 1 sharp question per group.',
+    script: 'There you are! Did you find that designer you mentioned earlier?' },
+  { time: '18:00', type: 'meal', icon: '🍷', title: 'Dinner #2 — Deep Talk',
+    desc: 'Open with their earlier comment. Move to business mid-meal. Offer 3 partnership options. Don\'t push.',
+    script: 'I\'ve been thinking about what you said earlier — about [their comment]. It stayed with me.' },
+  { time: '21:00', type: 'night', icon: '🌙', title: 'Closing & Bridge',
+    desc: 'Hand business card with handwritten note. Use one Indonesian phrase. Promise follow-up within 24h.',
+    script: 'I wrote something small on the back. Sampai jumpa, terima kasih banyak.' },
+  { time: '22:00', type: 'night', icon: '📱', title: 'WhatsApp Follow-up',
+    desc: 'Send within 24h. Reference SPECIFIC topic from conversation. Offer to send something — no business attached.',
+    script: 'Thank you for an unforgettable evening. The conversation about [topic] gave me a lot to think about.' },
+];
+
+// =====================================================
+// モチベーションメッセージ
+// =====================================================
+const HERO_MESSAGES = {
+  morning: [
+    "Today is a brick in the wall to Jakarta.",
+    "You're not learning English. You're building your future.",
+    "10 minutes today > 2 hours next week.",
+    "The Zacky who lands in Jakarta is built right now.",
+    "Lost generation? Watch us prove them wrong."
+  ],
+  noon: [
+    "Half the day done. Half the day to win.",
+    "5 minutes between meetings = 1 phrase mastered.",
+    "Your competitors aren't preparing. You are.",
+    "Show up to yourself today.",
+    "One more rep. That's how mastery looks."
+  ],
+  evening: [
+    "Tonight's reps = tomorrow's confidence.",
+    "Your mouth needs to know what your mind knows.",
+    "Sleep on what you practiced. Wake up better.",
+    "The boring 30 minutes builds the magic moment.",
+    "End strong. Tomorrow starts here."
+  ],
+  late: [
+    "Even 2 minutes preserves the streak.",
+    "Don't break the chain. Just open one card.",
+    "Your future self thanks you for showing up.",
+    "Sleep is recovery. But touch English first.",
+    "Quiet effort, loud results."
+  ]
+};
+
+const ACHIEVEMENTS = [
+  { id: 'streak3', threshold: 3, type: 'streak', icon: '🔥', title: '3-Day Streak!', msg: 'You\'re building the habit.' },
+  { id: 'streak7', threshold: 7, type: 'streak', icon: '🔥', title: 'Week Warrior!', msg: '1 week without missing.' },
+  { id: 'streak14', threshold: 14, type: 'streak', icon: '🔥', title: 'Two Weeks Strong!', msg: 'This is who you are now.' },
+  { id: 'streak30', threshold: 30, type: 'streak', icon: '🏆', title: 'Iron Discipline!', msg: '30 days. Few make it here.' },
+  { id: 'shadow100', threshold: 100, type: 'shadow_total', icon: '🎬', title: '100 Reps!', msg: 'Your mouth is changing.' },
+  { id: 'shadow500', threshold: 500, type: 'shadow_total', icon: '🎬', title: '500 Reps!', msg: 'Native-like rhythm forming.' },
+  { id: 'shadow1000', threshold: 1000, type: 'shadow_total', icon: '⭐', title: '1000 Reps Master!', msg: 'You earned this.' },
+  { id: 'vocab50', threshold: 50, type: 'vocab_total', icon: '📚', title: '50 Words!', msg: 'Your vocabulary is growing.' },
+  { id: 'pron10', threshold: 10, type: 'pron_total', icon: '📊', title: '10 Pronunciation Checks!', msg: 'You\'re measuring progress.' },
+];

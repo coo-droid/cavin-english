@@ -7,7 +7,7 @@ const Modules = {
       <div class="modal-title">MORNING DECLARATION</div>
       <div class="declaration">"${DECLARATION}"</div>
       <button class="btn-primary" onclick="Speech.speak('${DECLARATION}', 0.85)">🔊 LISTEN</button>
-      <button class="btn-primary btn-success" onclick="Storage.markDone('declaration'); App.toast('Declared ✓'); App.closeModal();">✓ MARK DONE</button>
+      <button class="btn-primary btn-success" onclick="Storage.markDone('declaration'); App.awardXP(5, event); App.closeModal();">✓ I DECLARED (+5 XP)</button>
     `;
     setTimeout(() => Speech.speak(DECLARATION, 0.85), 400);
   },
@@ -23,8 +23,8 @@ const Modules = {
         <button class="speed-btn active" onclick="Speech.speak(\`${hookEsc}\`, 0.9)">NORMAL</button>
         <button class="speed-btn" onclick="Speech.speak(\`${hookEsc}\`, 1.1)">FAST</button>
       </div>
-      <button class="btn-primary" onclick="Shadowing.start(\`${hookEsc}\`, 2); App.openModule('shadowing-active');">🎬 SHADOWING DRILL</button>
-      <button class="btn-primary btn-success" onclick="Storage.markDone('hook'); App.toast('Hook practiced ✓'); App.closeModal();">✓ MARK DONE</button>
+      <button class="btn-primary btn-pink" onclick="Shadowing.start(\`${hookEsc}\`, 2);">🎬 SHADOWING 20×</button>
+      <button class="btn-primary btn-success" onclick="Storage.markDone('hook'); App.awardXP(10, event); App.closeModal();">✓ HOOK DONE (+10 XP)</button>
     `;
     setTimeout(() => Speech.speak(HOOK, 0.85), 400);
   },
@@ -35,15 +35,26 @@ const Modules = {
     const aEsc = card.a.replace(/`/g, "'");
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">${title} · ${dayNames[new Date().getDay()]}</div>
-      <div class="flash-q">Q: ${card.q}</div>
-      <div class="flash-a">${card.a}</div>
+      <div class="flip-card" onclick="this.querySelector('.flip-inner').classList.toggle('flipped')">
+        <div class="flip-inner">
+          <div class="flip-front">
+            <div class="flip-q">${card.q}</div>
+            <div class="flip-hint">TAP TO REVEAL</div>
+          </div>
+          <div class="flip-back">
+            <div class="flip-a">${card.a}</div>
+            <div class="flip-hint">TAP TO HIDE</div>
+          </div>
+        </div>
+      </div>
       <button class="btn-primary" onclick="Speech.speak(\`${aEsc}\`)">🔊 LISTEN</button>
       <div class="btn-row-3">
         <button class="speed-btn" onclick="Speech.speak(\`${aEsc}\`, 0.75)">0.75x</button>
         <button class="speed-btn active" onclick="Speech.speak(\`${aEsc}\`, 0.9)">1.0x</button>
         <button class="speed-btn" onclick="Speech.speak(\`${aEsc}\`, 1.1)">1.2x</button>
       </div>
-      <button class="btn-primary btn-success" onclick="Storage.markDone('flash-${slot}'); Storage.recordEvent('flash_done'); App.toast('Flash done ✓'); App.closeModal();">✓ MARK DONE</button>
+      <button class="btn-primary btn-pink" onclick="Shadowing.start(\`${aEsc}\`, 2);">🎬 SHADOWING 20×</button>
+      <button class="btn-primary btn-success" onclick="Storage.markDone('flash-${slot}'); Storage.recordEvent('flash_done'); App.awardXP(10, event); App.closeModal();">✓ MARK DONE (+10 XP)</button>
     `;
     setTimeout(() => Speech.speak(card.a, 0.9), 400);
   },
@@ -54,12 +65,25 @@ const Modules = {
     const idx = Math.floor(Math.random()*7);
     const card = FLASH[slot][idx];
     const aEsc = card.a.replace(/`/g, "'");
+    const qEsc = card.q.replace(/`/g, "'");
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">RANDOM FLASH</div>
-      <div class="flash-q">Q: ${card.q}</div>
-      <div class="flash-a">${card.a}</div>
+      <div class="flip-card" onclick="this.querySelector('.flip-inner').classList.toggle('flipped')">
+        <div class="flip-inner">
+          <div class="flip-front">
+            <div class="flip-q">${card.q}</div>
+            <div class="flip-hint">TAP TO FLIP</div>
+          </div>
+          <div class="flip-back">
+            <div class="flip-a">${card.a}</div>
+            <div class="flip-hint">TAP TO FLIP BACK</div>
+          </div>
+        </div>
+      </div>
       <button class="btn-primary" onclick="Speech.speak(\`${aEsc}\`)">🔊 LISTEN</button>
+      <button class="btn-primary btn-pink" onclick="Shadowing.start(\`${aEsc}\`, ${aEsc.length > 60 ? 2 : 1});">🎬 SHADOWING DRILL</button>
       <button class="btn-secondary" onclick="App.openModule('flash-random')">🔀 ANOTHER ONE</button>
+      <button class="btn-secondary" onclick="App.awardXP(5); App.closeModal();">✓ DONE (+5 XP)</button>
     `;
     setTimeout(() => Speech.speak(card.a, 0.9), 300);
   },
@@ -71,8 +95,8 @@ const Modules = {
       <div class="declaration" style="font-style:normal; font-size:24px;">"${phrase}"</div>
       <div style="text-align:center; font-size:11px; color: var(--text-dim); margin-bottom:14px;">SAY IT 3 TIMES</div>
       <button class="btn-primary" onclick="Speech.speak(\`${phrase}\`, 0.9)">🔊 LISTEN</button>
-      <button class="btn-primary" onclick="Shadowing.start(\`${phrase}\`, 1); setTimeout(()=>Shadowing.render(), 100);">🎬 50× DRILL</button>
-      <button class="btn-primary btn-success" onclick="Storage.markDone('phrase-today'); App.toast('Phrase practiced ✓'); App.closeModal();">✓ MARK DONE</button>
+      <button class="btn-primary btn-pink" onclick="Shadowing.start(\`${phrase}\`, 1);">🎬 50× DRILL</button>
+      <button class="btn-primary btn-success" onclick="Storage.markDone('phrase-today'); App.awardXP(8, event); App.closeModal();">✓ PRACTICED (+8 XP)</button>
     `;
     setTimeout(() => Speech.speak(phrase, 0.9), 400);
   },
@@ -163,9 +187,9 @@ const Modules = {
       ${examples}
       <div class="section-title" style="margin: 18px 0 8px;">REVIEW</div>
       <div class="btn-row-3">
-        <button class="btn-primary btn-danger" onclick="Vocab.review('${v.id}', 1); App.toast('Will see again soon'); App.openModule('vocab-list');">😵 FORGOT</button>
-        <button class="btn-primary" style="background:#888;color:#fff;" onclick="Vocab.review('${v.id}', 3); App.toast('Got it'); App.openModule('vocab-list');">😐 HARD</button>
-        <button class="btn-primary btn-success" onclick="Vocab.review('${v.id}', 5); App.toast('Mastered'); App.openModule('vocab-list');">😎 EASY</button>
+        <button class="btn-primary btn-danger" onclick="Vocab.review('${v.id}', 1); App.toast('Will see again soon 🔄'); App.openModule('vocab-list');">😵 FORGOT</button>
+        <button class="btn-primary" style="background:#888;color:#fff;border-bottom-color:#555;" onclick="Vocab.review('${v.id}', 3); App.awardXP(3); App.openModule('vocab-list');">😐 HARD</button>
+        <button class="btn-primary btn-success" onclick="Vocab.review('${v.id}', 5); App.awardXP(5, event); App.openModule('vocab-list');">😎 EASY</button>
       </div>
       <button class="btn-secondary" onclick="if(confirm('Delete?')){Vocab.remove('${v.id}'); App.openModule('vocab-list');}">🗑 DELETE</button>
     `;
@@ -220,13 +244,15 @@ const Modules = {
   vocabReview() {
     const due = Vocab.due();
     if (due.length === 0) {
+      App.confetti(30);
       document.getElementById('modalBody').innerHTML = `
-        <div class="modal-title">REVIEW DONE</div>
-        <div style="text-align:center; padding:40px 0;">
-          <div style="font-size:60px;">🌸</div>
-          <div style="color:var(--gold); margin-top:10px;">All caught up!</div>
+        <div class="modal-title">ALL CAUGHT UP!</div>
+        <div class="burst-card">
+          <div class="burst-emoji">🌸</div>
+          <div class="burst-title">No reviews waiting!</div>
+          <div class="burst-msg">Your memory is in great shape.</div>
         </div>
-        <button class="btn-primary" onclick="App.openModule('vocab-list')">BACK TO LIST</button>
+        <button class="btn-primary btn-success" onclick="App.openModule('vocab-list')">BACK TO LIST</button>
       `;
       return;
     }
@@ -250,8 +276,8 @@ const Modules = {
       <div style="margin-top:14px;">
         <div class="btn-row-3">
           <button class="btn-primary btn-danger" onclick="Vocab.review('${v.id}', 1); App.openModule('vocab-review');">😵 FORGOT</button>
-          <button class="btn-primary" style="background:#888;color:#fff;" onclick="Vocab.review('${v.id}', 3); App.openModule('vocab-review');">😐 HARD</button>
-          <button class="btn-primary btn-success" onclick="Vocab.review('${v.id}', 5); App.openModule('vocab-review');">😎 EASY</button>
+          <button class="btn-primary" style="background:#888;color:#fff;border-bottom-color:#555;" onclick="Vocab.review('${v.id}', 3); Storage.addXP(3); App.openModule('vocab-review');">😐 HARD</button>
+          <button class="btn-primary btn-success" onclick="Vocab.review('${v.id}', 5); Storage.addXP(5); App.openModule('vocab-review');">😎 EASY</button>
         </div>
       </div>
     `;
@@ -486,7 +512,7 @@ const Modules = {
     };
     Storage.set('diary_' + today, data);
     Storage.markDone('diary');
-    App.toast('Saved ✓');
+    App.awardXP(15);
     App.closeModal();
   },
 
@@ -505,7 +531,7 @@ const Modules = {
         </div>
       </div>
       <button class="btn-primary" onclick="Speech.speak(\`Japan grows some of the world's most beautiful flowers. I'm Zacky. I'm here to change that.\`, 0.85)">🔊 LISTEN</button>
-      <button class="btn-primary btn-success" onclick="Storage.markDone('declaration'); Storage.markDone('hook'); App.toast('Streak preserved ✓'); App.closeModal();">✓ DONE</button>
+      <button class="btn-primary btn-success" onclick="Storage.markDone('declaration'); Storage.markDone('hook'); App.awardXP(3); App.toast('Streak preserved 🔥', 'fire'); App.closeModal();">✓ STREAK SAVED</button>
     `;
   },
 
@@ -527,5 +553,263 @@ const Modules = {
       });
     }
     document.getElementById('modalBody').innerHTML = html;
+  },
+
+  // ===========================================
+  // 商談当日タイムライン
+  // ===========================================
+  timeline() {
+    const days = Storage.daysUntil(TARGET_DATE);
+    const items = JAKARTA_TIMELINE.map((t, i) => `
+      <div class="timeline-item t-${t.type} slide-up" style="animation-delay: ${i * 0.06}s;">
+        <div class="timeline-time">${t.time}  ·  ${t.icon}</div>
+        <div class="timeline-title">${t.title}</div>
+        <div class="timeline-desc">${t.desc}</div>
+        <div class="timeline-script">"${t.script}"</div>
+        <div style="display:flex; gap:6px; margin-top:8px;">
+          <button class="example-speak" onclick="Speech.speak(\`${t.script.replace(/`/g,"'")}\`, 0.9)">🔊 LISTEN</button>
+          <button class="example-speak" onclick="Shadowing.start(\`${t.script.replace(/`/g,"'")}\`, ${t.script.length > 60 ? 2 : 1});">🎬 DRILL</button>
+          <button class="example-speak" onclick="Vocab.add({type:'sentence', en:\`${t.script.replace(/`/g,"'")}\`, jp:\`${t.title}\`, examples:[]}); App.toast('Added to vocab ✓');">+ VOCAB</button>
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">JAKARTA · DAY TIMELINE</div>
+      <div style="background: linear-gradient(135deg, #fff0f4, #ffe0ec); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; text-align: center;">
+        <div style="font-size: 11px; color: var(--primary); font-weight: 900; letter-spacing: 1.5px; margin-bottom: 4px;">COUNTDOWN</div>
+        <div style="font-size: 32px; font-weight: 900; color: var(--primary-dark); line-height: 1;">${days >= 0 ? days : '✓'} <span style="font-size: 14px;">${days >= 0 ? 'days to go' : 'completed'}</span></div>
+      </div>
+      <div class="timeline">${items}</div>
+      <div style="text-align: center; font-size: 12px; color: var(--text-soft); font-weight: 800; padding: 10px;">
+        Tap any phrase to practice. Make this day yours. 🌸
+      </div>
+    `;
+  },
+
+  // ===========================================
+  // 週次レポート
+  // ===========================================
+  weeklyReport() {
+    const dates = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      dates.push(`${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`);
+    }
+    const totalReps = dates.reduce((s, d) => s + Storage.getEvent('shadow_rep', d), 0);
+    const totalFlash = dates.reduce((s, d) => s + Storage.getEvent('flash_done', d), 0);
+    const totalReviews = dates.reduce((s, d) => s + Storage.getEvent('vocab_review', d), 0);
+    const totalPron = dates.reduce((s, d) => s + Storage.getEvent('pronunciation_check', d), 0);
+    const totalDoneDays = dates.filter(d => (Storage.get('done_' + d, []).length > 0)).length;
+
+    // 先週との比較
+    const prevDates = [];
+    for (let i = 13; i >= 7; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      prevDates.push(`${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`);
+    }
+    const prevReps = prevDates.reduce((s, d) => s + Storage.getEvent('shadow_rep', d), 0);
+    const repsDelta = totalReps - prevReps;
+
+    let summary = "Keep going!";
+    if (totalDoneDays >= 6) summary = "🔥 Iron week! You showed up.";
+    else if (totalDoneDays >= 4) summary = "👍 Solid week. Build on this.";
+    else if (totalDoneDays >= 2) summary = "💪 Some sparks. Push next week.";
+    else summary = "🌱 Fresh start. Tomorrow is yours.";
+
+    const days = Storage.daysUntil(TARGET_DATE);
+    const lvProgress = Storage.getLevelProgress();
+
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">WEEKLY REPORT</div>
+      <div class="burst-card">
+        <div class="burst-emoji">📈</div>
+        <div class="burst-title">${summary}</div>
+        <div class="burst-msg">${totalDoneDays} active days · ${days >= 0 ? days + ' days to Jakarta' : 'Mission complete'}</div>
+      </div>
+
+      <div class="report-stat slide-up">
+        <span class="report-icon">🎬</span>
+        <div class="report-detail">
+          <div class="report-name">Shadowing Reps</div>
+          <div class="report-sub">${repsDelta >= 0 ? '+' : ''}${repsDelta} vs last week</div>
+        </div>
+        <div class="report-value">${totalReps}</div>
+      </div>
+      <div class="report-stat slide-up" style="animation-delay:0.05s;">
+        <span class="report-icon">🃏</span>
+        <div class="report-detail">
+          <div class="report-name">Flash Cards</div>
+          <div class="report-sub">${totalFlash} done this week</div>
+        </div>
+        <div class="report-value">${totalFlash}</div>
+      </div>
+      <div class="report-stat slide-up" style="animation-delay:0.1s;">
+        <span class="report-icon">📚</span>
+        <div class="report-detail">
+          <div class="report-name">Vocab Reviews</div>
+          <div class="report-sub">SM-2 forgetting curve</div>
+        </div>
+        <div class="report-value">${totalReviews}</div>
+      </div>
+      <div class="report-stat slide-up" style="animation-delay:0.15s;">
+        <span class="report-icon">📊</span>
+        <div class="report-detail">
+          <div class="report-name">Pronunciation Checks</div>
+          <div class="report-sub">Your mouth knows more now</div>
+        </div>
+        <div class="report-value">${totalPron}</div>
+      </div>
+      <div class="report-stat slide-up" style="animation-delay:0.2s;">
+        <span class="report-icon">⭐</span>
+        <div class="report-detail">
+          <div class="report-name">Level ${Storage.getLevel()}</div>
+          <div class="report-sub">${lvProgress.current}/${lvProgress.total} XP to next</div>
+        </div>
+        <div class="report-value">${Storage.getXP()}</div>
+      </div>
+
+      <div style="background: var(--bg-soft); border-radius: 14px; padding: 14px; margin: 14px 0; text-align: center;">
+        <div style="font-size: 12px; color: var(--text-soft); font-weight: 900; letter-spacing: 1px; margin-bottom: 8px;">FOCUS NEXT WEEK</div>
+        <div style="font-size: 14px; color: var(--text); font-weight: 800; line-height: 1.6;">
+          ${this.getNextWeekFocus(totalReps, totalReviews, totalPron, totalDoneDays)}
+        </div>
+      </div>
+      <button class="btn-primary btn-success" onclick="App.confetti(20); App.closeModal();">LET'S GO 💪</button>
+    `;
+  },
+
+  getNextWeekFocus(reps, reviews, pron, days) {
+    if (days < 3) return "Show up daily — even 2 minutes counts. The streak is the asset.";
+    if (reps < 50) return "Double the shadowing. Aim for 100+ reps. Mouth memory is everything.";
+    if (pron < 5) return "Use Pronunciation Check more. Measurement = improvement.";
+    if (reviews < 20) return "Review vocabulary daily. The forgetting curve is your enemy.";
+    return "You're crushing it. Add 1 new ambitious thing — Custom Shadowing or Voice Roleplay.";
+  },
+
+  // ===========================================
+  // ChatGPT API直接連携
+  // ===========================================
+  chatgptApi() {
+    const hasKey = Storage.hasApiKey();
+    const chatHist = Storage.get('ai_chat_history', []);
+    const chatHtml = chatHist.length === 0
+      ? `<div class="chat-msg chat-ai">Hi Zacky! I'm your in-app English tutor. Ask me anything, or just chat. I'll keep us in English.</div>`
+      : chatHist.map(m => `<div class="chat-msg chat-${m.role === 'user' ? 'user' : 'ai'}">${m.content}</div>`).join('');
+
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">AI TUTOR · IN-APP CHAT</div>
+      ${!hasKey ? `
+        <div class="api-card">
+          <div class="api-status">⚙️ SETUP REQUIRED</div>
+          <div style="font-size: 12px; color: var(--text); font-weight: 700; line-height: 1.5; margin-bottom: 10px;">
+            Paste your OpenAI API key to enable in-app chat.<br>
+            Get one at <b>platform.openai.com/api-keys</b>.<br>
+            Stored only in your browser.
+          </div>
+          <input type="text" id="apiKeyInput" placeholder="sk-..." style="margin-bottom: 8px;">
+          <button class="btn-primary btn-success" onclick="Modules.saveApiKey()">✓ SAVE KEY</button>
+        </div>
+      ` : `
+        <div style="font-size: 11px; color: var(--text-soft); font-weight: 800; margin-bottom: 8px;">
+          API key set ✓ &nbsp;<a href="javascript:Modules.clearApiKey()" style="color: var(--danger);">Remove</a>
+        </div>
+      `}
+      <div class="chat-area" id="aiChatArea">${chatHtml}</div>
+      ${hasKey ? `
+        <input type="text" id="aiChatInput" placeholder="Type in English..." onkeydown="if(event.key==='Enter')Modules.sendAiMessage()">
+        <div class="btn-row">
+          <button class="btn-primary" onclick="Modules.sendAiMessage()">SEND</button>
+          <button class="btn-secondary" onclick="Modules.aiVoiceInput()">🎙️ SPEAK</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn-secondary" onclick="Modules.startAiScenario('meeting')">🤝 MEETING</button>
+          <button class="btn-secondary" onclick="Modules.startAiScenario('smalltalk')">💬 SMALL TALK</button>
+        </div>
+        <button class="btn-secondary" onclick="Storage.set('ai_chat_history', []); Modules.chatgptApi();">🗑 CLEAR CHAT</button>
+      ` : ''}
+    `;
+  },
+
+  saveApiKey() {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    if (!key.startsWith('sk-')) { App.toast('Invalid key format'); return; }
+    Storage.setApiKey(key);
+    App.toast('Key saved ✓');
+    this.chatgptApi();
+  },
+
+  clearApiKey() {
+    if (!confirm('Remove API key?')) return;
+    Storage.setApiKey('');
+    this.chatgptApi();
+  },
+
+  startAiScenario(type) {
+    const prompts = {
+      meeting: "You are Mr. Tan, a 50yo Chinese-Indonesian luxury hotel owner in Jakarta. I'm Zacky from CAVIN selling premium Japanese flowers. Be skeptical but curious. Ask me one business question at a time, in English. Stay in character. Begin.",
+      smalltalk: "You are Ibu Sari, a 45yo Indonesian fashion entrepreneur. We meet at a Jakarta carnival reception. Make natural English small talk about Indonesia, Japan, life. Don't talk about flowers unless I mention them. Limit each turn to 2-3 sentences. Begin by introducing yourself."
+    };
+    const hist = [{ role: 'system', content: prompts[type] }];
+    Storage.set('ai_chat_history', hist);
+    this.chatgptApi();
+    setTimeout(() => this.sendAiMessage('__start__'), 200);
+  },
+
+  async aiVoiceInput() {
+    const input = document.getElementById('aiChatInput');
+    input.placeholder = '🎙️ Listening...';
+    Speech.startRecognition(
+      (t) => { input.value = t; input.placeholder = 'Type in English...'; this.sendAiMessage(); },
+      (err) => { input.placeholder = 'Type in English...'; App.toast('Mic error'); }
+    );
+  },
+
+  async sendAiMessage(forceText) {
+    const input = document.getElementById('aiChatInput');
+    const text = forceText === '__start__' ? null : (forceText || (input ? input.value.trim() : ''));
+    if (input) input.value = '';
+    const hist = Storage.get('ai_chat_history', []);
+    if (text) hist.push({ role: 'user', content: text });
+    const area = document.getElementById('aiChatArea');
+    if (text) area.innerHTML += `<div class="chat-msg chat-user">${text}</div>`;
+    area.innerHTML += `<div class="chat-msg chat-ai" id="aiThinking">...</div>`;
+    area.scrollTop = area.scrollHeight;
+
+    try {
+      const sysPrompt = hist.find(m => m.role === 'system')
+        ? null
+        : { role: 'system', content: "You are a warm, encouraging English tutor for a Japanese businessman named Zacky who is preparing for a luxury flower sales trip to Indonesia. Reply in English. Keep replies concise (2-4 sentences). Gently correct major errors with a friendly tone. End with a question to keep practice going." };
+      const messages = sysPrompt ? [sysPrompt, ...hist] : [...hist];
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + Storage.getApiKey(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages,
+          temperature: 0.7,
+          max_tokens: 250
+        })
+      });
+      if (!r.ok) {
+        const e = await r.text();
+        document.getElementById('aiThinking').innerHTML = `<span style="color:var(--danger);">Error: ${r.status}. Check API key.</span>`;
+        return;
+      }
+      const data = await r.json();
+      const reply = data.choices[0].message.content;
+      hist.push({ role: 'assistant', content: reply });
+      Storage.set('ai_chat_history', hist);
+      document.getElementById('aiThinking').remove();
+      area.innerHTML += `<div class="chat-msg chat-ai">${reply}</div>`;
+      area.scrollTop = area.scrollHeight;
+      Speech.speak(reply, 0.95);
+      Storage.addXP(2);
+    } catch (e) {
+      const t = document.getElementById('aiThinking');
+      if (t) t.innerHTML = `<span style="color:var(--danger);">Network error. Try again.</span>`;
+    }
   }
 };
