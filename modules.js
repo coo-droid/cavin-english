@@ -1,6 +1,12 @@
 // =====================================================
 // 各モジュール（モーダル中身）
 // =====================================================
+
+// 使用モデル（一元管理）
+function _chatModel() {
+  return (typeof Storage !== 'undefined' && Storage.get) ? Storage.get('chatModel', 'gpt-4o') : 'gpt-4o';
+}
+
 const Modules = {
   declaration() {
     document.getElementById('modalBody').innerHTML = `
@@ -874,6 +880,7 @@ const Modules = {
       ` : `
         <div style="font-size: 11px; color: var(--text-soft); font-weight: 800; margin-bottom: 8px;">
           API key set ✓ &nbsp;<a href="javascript:Modules.clearApiKey()" style="color: var(--danger);">Remove</a>
+          &nbsp;·&nbsp;<a href="javascript:Modules.aiSettings()" style="color: var(--info);">⚙️ Voice & Model</a>
         </div>
       `}
       <div class="chat-area" id="aiChatArea">${chatHtml}</div>
@@ -890,6 +897,116 @@ const Modules = {
         <button class="btn-secondary" onclick="Storage.set('ai_chat_history', []); Modules.chatgptApi();">🗑 CLEAR CHAT</button>
       ` : ''}
     `;
+  },
+
+  // ===========================================
+  // 🎙️ AI Tutor 設定（モデル選択・音声選択）
+  // ===========================================
+  aiSettings() {
+    const useTts = Storage.get('useOpenAiTts', true);
+    const voice = Storage.get('ttsVoice', 'nova');
+    const chatModel = Storage.get('chatModel', 'gpt-4o');
+    const transcribeModel = Storage.get('transcribeModel', 'gpt-4o-transcribe');
+    const instructions = Storage.get('ttsInstructions', 'Speak in a calm, sophisticated, articulate manner — like a luxury brand ambassador. Clear pronunciation. Natural pacing.');
+
+    const voices = [
+      { id: 'nova',    label: 'Nova',    desc: '女性・温かく明瞭（デフォルト推奨）' },
+      { id: 'alloy',   label: 'Alloy',   desc: '中性・落ち着いた' },
+      { id: 'shimmer', label: 'Shimmer', desc: '女性・若く明るい' },
+      { id: 'echo',    label: 'Echo',    desc: '男性・落ち着いた' },
+      { id: 'onyx',    label: 'Onyx',    desc: '男性・低音・威厳' },
+      { id: 'fable',   label: 'Fable',   desc: '英国系・上品' },
+      { id: 'sage',    label: 'Sage',    desc: '中性・穏やか' },
+      { id: 'coral',   label: 'Coral',   desc: '女性・親しみやすい' },
+      { id: 'ash',     label: 'Ash',     desc: '男性・知的' },
+      { id: 'ballad',  label: 'Ballad',  desc: '男性・叙情的' },
+      { id: 'verse',   label: 'Verse',   desc: '女性・繊細' }
+    ];
+    const voiceCards = voices.map(v => `
+      <div class="voice-card ${v.id === voice ? 'voice-selected' : ''}" onclick="Modules.pickVoice('${v.id}')">
+        <div class="voice-name">${v.label}</div>
+        <div class="voice-desc">${v.desc}</div>
+        <button class="example-speak" onclick="event.stopPropagation(); Modules.previewVoice('${v.id}')">🔊 PREVIEW</button>
+      </div>
+    `).join('');
+
+    const chatModels = [
+      { id: 'gpt-4o',      label: 'GPT-4o',       desc: '最も滑らか・推奨' },
+      { id: 'gpt-4o-mini', label: 'GPT-4o mini',  desc: '安価・速い（精度やや低）' },
+      { id: 'gpt-5',       label: 'GPT-5',        desc: '最新フラッグシップ（高価）' },
+      { id: 'gpt-5-mini',  label: 'GPT-5 mini',   desc: '最新の中間グレード' }
+    ];
+    const transcribeModels = [
+      { id: 'gpt-4o-transcribe',      label: 'gpt-4o-transcribe', desc: '最高精度（推奨）' },
+      { id: 'gpt-4o-mini-transcribe', label: 'gpt-4o-mini-transcribe', desc: '安価・速い' },
+      { id: 'whisper-1',              label: 'whisper-1', desc: '従来モデル（互換重視）' }
+    ];
+
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">⚙️ AI VOICE & MODEL SETTINGS</div>
+      <button class="btn-secondary" onclick="Modules.chatgptApi()">← BACK TO CHAT</button>
+
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">最新のOpenAIモデルを使うと、リスニング・会話・添削の体験が劇的に上がる。Nova/Alloyなど人間に近い音声でシャドーイング教材も自然に。</div>
+        <div class="why-impact">→ ネイティブ並みの音で耳と口を鍛える</div>
+      </div>
+
+      <div class="label" style="margin-top:14px;">🔊 USE OPENAI TTS</div>
+      <div style="background: var(--card); border: 2px solid var(--line); border-bottom-width: 3px; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;">
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight: 800; font-size: 13px;">
+          <input type="checkbox" id="ttsToggle" ${useTts ? 'checked' : ''} onchange="Storage.set('useOpenAiTts', this.checked); App.toast(this.checked ? 'OpenAI TTS ON' : 'Browser TTS')">
+          OpenAIの人間的な音声を使う（ON推奨）
+        </label>
+        <div style="font-size: 11px; color: var(--text-soft); margin-top: 6px; font-weight: 700; line-height: 1.5;">
+          OFFにするとブラウザ標準TTS（無料・棒読み）に切り替わります。<br>
+          コスト目安: $0.015/分（10分 = 約23円）
+        </div>
+      </div>
+
+      <div class="label">🎤 VOICE</div>
+      <div class="voice-grid">${voiceCards}</div>
+
+      <div class="label" style="margin-top:14px;">🎭 VOICE STYLE INSTRUCTIONS</div>
+      <textarea id="ttsInstr" rows="3" placeholder="話し方を英語で指示（例: Calm, sophisticated, like a luxury brand ambassador）">${instructions}</textarea>
+      <button class="btn-secondary" onclick="Storage.set('ttsInstructions', document.getElementById('ttsInstr').value); App.toast('Style saved ✓');">💾 SAVE STYLE</button>
+
+      <div class="label" style="margin-top:14px;">💬 CHAT / FEEDBACK MODEL</div>
+      <div class="model-list">
+        ${chatModels.map(m => `
+          <div class="model-card ${m.id === chatModel ? 'model-selected' : ''}" onclick="Storage.set('chatModel', '${m.id}'); Modules.aiSettings();">
+            <div class="model-name">${m.label}</div>
+            <div class="model-desc">${m.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="label" style="margin-top:14px;">🎙️ TRANSCRIBE (SPEECH→TEXT)</div>
+      <div class="model-list">
+        ${transcribeModels.map(m => `
+          <div class="model-card ${m.id === transcribeModel ? 'model-selected' : ''}" onclick="Storage.set('transcribeModel', '${m.id}'); Modules.aiSettings();">
+            <div class="model-name">${m.label}</div>
+            <div class="model-desc">${m.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <button class="btn-primary btn-success" style="margin-top:16px;" onclick="Modules.chatgptApi()">✓ DONE</button>
+    `;
+  },
+
+  pickVoice(v) {
+    Storage.set('ttsVoice', v);
+    App.toast('Voice: ' + v);
+    this.previewVoice(v);
+    this.aiSettings();
+  },
+
+  previewVoice(v) {
+    const old = Storage.get('ttsVoice', 'nova');
+    Storage.set('ttsVoice', v);
+    Speech.speak("Hi Zacky. Japan grows the world's finest flowers — and I'm here to help you tell that story.", 0.95);
+    // 元に戻すのは選択時のみ。プレビュー直後に戻すと再生中の声が変わるため、ここでは戻さない（保存）
   },
 
   saveApiKey() {
@@ -1119,7 +1236,7 @@ Analyze and return JSON.`;
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: _chatModel(),
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
@@ -1537,7 +1654,7 @@ Analyze and return JSON.`;
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: _chatModel(),
           messages: [
             { role: 'system', content: 'You are an English writing coach. Output JSON: {"score":int,"summary":"jp 1 sentence","grammar":[{"issue","fix","explain_jp"}],"vocabulary":[{"weak","better","reason_jp"}],"model_answer":"polished version"}. Be concise. Limit each array to 2 items.' },
             { role: 'user', content: `Situation: ${prompt.situation}\n\nWriting: "${text}"\n\nReference: "${prompt.sample}"` }
@@ -1842,7 +1959,7 @@ Analyze and return JSON.`;
       const r = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'gpt-4o-mini', messages: [...hist, { role: 'user', content: 'Begin the scenario by greeting me first.' }], temperature: 0.7, max_tokens: 100 })
+        body: JSON.stringify({ model: _chatModel(), messages: [...hist, { role: 'user', content: 'Begin the scenario by greeting me first.' }], temperature: 0.7, max_tokens: 100 })
       });
       const data = await r.json();
       const reply = data.choices[0].message.content;
@@ -1882,7 +1999,7 @@ Analyze and return JSON.`;
       const r = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'gpt-4o-mini', messages, temperature: 0.7, max_tokens: 150 })
+        body: JSON.stringify({ model: _chatModel(), messages, temperature: 0.7, max_tokens: 150 })
       });
       if (!r.ok) {
         status.textContent = 'API error: ' + r.status;
@@ -2056,7 +2173,7 @@ ${totalDoneDays >= 6 ? '🔥 Iron week! You showed up.' :
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: _chatModel(),
           messages,
           temperature: 0.7,
           max_tokens: 250

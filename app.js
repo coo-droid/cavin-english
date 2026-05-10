@@ -12,7 +12,7 @@ const App = {
     });
     // Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=9').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=10').catch(() => {});
     }
     // 起動時にアチーブメントチェック
     setTimeout(() => this.checkAchievements(), 800);

@@ -22,7 +22,22 @@ const Speech = {
     window.speechSynthesis.onvoiceschanged = load;
   },
 
+  // 現在再生中のOpenAI TTSオーディオ（停止用）
+  currentAudio: null,
+  ttsAbortController: null,
+
   speak(text, rate = 0.9, onEnd = null) {
+    // APIキーがあって、TTS有効ならOpenAI TTS（gpt-4o-mini-tts）を使う
+    const ttsEnabled = (typeof Storage !== 'undefined' && Storage.hasApiKey() && Storage.get('useOpenAiTts', true));
+    if (ttsEnabled) {
+      this.speakWithOpenAI(text, rate, onEnd);
+      return;
+    }
+    // フォールバック：ブラウザのSpeechSynthesis
+    this.speakWithBrowser(text, rate, onEnd);
+  },
+
+  speakWithBrowser(text, rate = 0.9, onEnd = null) {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
@@ -35,8 +50,76 @@ const Speech = {
     return u;
   },
 
+  // OpenAI gpt-4o-mini-tts でリアルな人間の声
+  async speakWithOpenAI(text, rate = 0.9, onEnd = null) {
+    if (!Storage || !Storage.hasApiKey()) {
+      this.speakWithBrowser(text, rate, onEnd);
+      return;
+    }
+    // 進行中があれば止める
+    this.cancel();
+
+    const voice = Storage.get('ttsVoice', 'nova'); // デフォルト：nova（女性・温かい）
+    const instructions = Storage.get('ttsInstructions', 'Speak in a calm, sophisticated, articulate manner — like a luxury brand ambassador. Clear pronunciation. Natural pacing.');
+
+    try {
+      this.ttsAbortController = new AbortController();
+      const r = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        signal: this.ttsAbortController.signal,
+        headers: {
+          'Authorization': 'Bearer ' + Storage.getApiKey(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini-tts',
+          voice: voice,
+          input: text,
+          instructions: instructions,
+          response_format: 'mp3',
+          speed: rate < 0.7 ? 0.7 : rate > 1.5 ? 1.5 : rate
+        })
+      });
+      if (!r.ok) {
+        // フォールバック
+        this.speakWithBrowser(text, rate, onEnd);
+        return;
+      }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      this.currentAudio = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (this.currentAudio === audio) this.currentAudio = null;
+        if (onEnd) onEnd();
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        if (this.currentAudio === audio) this.currentAudio = null;
+        // エラー時はブラウザTTSにフォールバック
+        this.speakWithBrowser(text, rate, onEnd);
+      };
+      audio.play().catch(() => this.speakWithBrowser(text, rate, onEnd));
+    } catch (e) {
+      // ネットワークエラー等 → ブラウザTTSにフォールバック
+      if (e.name !== 'AbortError') this.speakWithBrowser(text, rate, onEnd);
+    }
+  },
+
   cancel() {
+    // ブラウザTTS停止
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    // OpenAI TTSオーディオ停止
+    if (this.currentAudio) {
+      try { this.currentAudio.pause(); } catch(e) {}
+      this.currentAudio = null;
+    }
+    // フェッチ中ならキャンセル
+    if (this.ttsAbortController) {
+      try { this.ttsAbortController.abort(); } catch(e) {}
+      this.ttsAbortController = null;
+    }
   },
 
   // ====================================================
@@ -208,7 +291,9 @@ const Speech = {
                 (mime || '').includes('ogg') ? 'ogg' : 'm4a';
     const fd = new FormData();
     fd.append('file', blob, 'recording.' + ext);
-    fd.append('model', 'whisper-1');
+    // 最新の高精度モデル gpt-4o-transcribe（フォールバックは whisper-1）
+    const model = (typeof Storage !== 'undefined' && Storage.get) ? Storage.get('transcribeModel', 'gpt-4o-transcribe') : 'gpt-4o-transcribe';
+    fd.append('model', model);
     fd.append('language', 'en');
     const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
