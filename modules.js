@@ -910,6 +910,378 @@ const Modules = {
   },
 
   // ===========================================
+  // ✍️ Composition Trainer
+  // お題 → 自分で英作文 → AI添削 → 書き直し
+  // ===========================================
+  compositionState: null,
+
+  composition() {
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">✍️ COMPOSITION TRAINER</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY COMPOSITION</div>
+        <div class="why-text">${PURPOSE.composition.why}</div>
+        <div class="why-impact">${PURPOSE.composition.impact}</div>
+      </div>
+      <div style="font-size: 13px; color: var(--text-soft); font-weight: 800; margin-bottom: 12px; line-height: 1.6;">
+        お題に対して英作文 → AIが文法・語彙・自然さを指摘 → 学んで書き直す → さらに磨く
+      </div>
+      <div class="label">DIFFICULTY</div>
+      <div class="btn-row-3">
+        <button class="speed-btn active" id="diff-easy" onclick="Modules.compositionPickLevel('easy')">EASY · 1文</button>
+        <button class="speed-btn" id="diff-medium" onclick="Modules.compositionPickLevel('medium')">MEDIUM · 2-3文</button>
+        <button class="speed-btn" id="diff-hard" onclick="Modules.compositionPickLevel('hard')">HARD · 段落</button>
+      </div>
+      <button class="btn-primary btn-pink" onclick="Modules.compositionStart()">🚀 START WITH RANDOM PROMPT</button>
+      <button class="btn-secondary" onclick="Modules.compositionHistory()">📓 PAST ATTEMPTS</button>
+    `;
+    window._compLevel = 'easy';
+  },
+
+  compositionPickLevel(lvl) {
+    window._compLevel = lvl;
+    document.querySelectorAll('[id^=diff-]').forEach(b => b.classList.remove('active'));
+    const el = document.getElementById('diff-' + lvl);
+    if (el) el.classList.add('active');
+  },
+
+  compositionStart() {
+    const lvl = window._compLevel || 'easy';
+    const pool = COMPOSITION_PROMPTS.filter(p => p.level === lvl);
+    const recent = Storage.get('comp_recent', []);
+    const fresh = pool.filter(p => !recent.includes(p.situation));
+    const candidates = fresh.length > 0 ? fresh : pool;
+    const prompt = candidates[Math.floor(Math.random() * candidates.length)];
+    Storage.set('comp_recent', [...recent, prompt.situation].slice(-6));
+    this.compositionState = {
+      prompt,
+      attempt: 1,
+      attempts: [],
+      startedAt: new Date().toISOString()
+    };
+    this.compositionRender();
+  },
+
+  compositionRender() {
+    if (!this.compositionState) return;
+    const s = this.compositionState;
+    const p = s.prompt;
+    const lastAttempt = s.attempts[s.attempts.length - 1];
+    const isFirstAttempt = s.attempts.length === 0;
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">✍️ COMPOSITION · ATTEMPT ${s.attempt}</div>
+      <div class="comp-prompt-card">
+        <div class="comp-prompt-label">📝 SITUATION</div>
+        <div class="comp-prompt-text">${p.situation}</div>
+        ${p.hint ? `<div class="comp-prompt-hint">💡 ${p.hint}</div>` : ''}
+        <div class="comp-prompt-level">${p.level === 'easy' ? '🟢 EASY · 1 sentence' : p.level === 'medium' ? '🟡 MEDIUM · 2-3 sentences' : '🔴 HARD · paragraph'}</div>
+      </div>
+      ${!isFirstAttempt ? `
+      <div class="why-card" style="background: linear-gradient(135deg, #ebffe0, #d4f0c0); border-color: var(--success);">
+        <div class="why-label" style="color: var(--success-dark);">🔄 RETRY — APPLY WHAT YOU LEARNED</div>
+        <div class="why-text">前回の指摘を反映して、もう一度書いてみよう。良くなっているはず。</div>
+      </div>
+      ` : ''}
+      <div class="label">YOUR ENGLISH</div>
+      <textarea id="compInput" rows="${p.level === 'easy' ? 3 : p.level === 'medium' ? 5 : 7}" placeholder="${isFirstAttempt ? 'Type your English here...' : 'Write your improved version...'}">${lastAttempt ? lastAttempt.userText : ''}</textarea>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="Modules.compositionVoiceInput()">🎙️ SPEAK INSTEAD</button>
+        <button class="btn-secondary" onclick="document.getElementById('compInput').value=''">🗑 CLEAR</button>
+      </div>
+      <button class="btn-primary btn-pink" onclick="Modules.compositionSubmit()">✓ GET FEEDBACK</button>
+      <div id="compFeedback"></div>
+      <button class="btn-secondary" onclick="Modules.composition()">← BACK</button>
+    `;
+  },
+
+  async compositionVoiceInput() {
+    const input = document.getElementById('compInput');
+    if (!input) return;
+    if (Storage.hasApiKey()) {
+      input.placeholder = '🎙️ Recording... tap STOP when done';
+      try {
+        await Speech.startRecording();
+        const oldText = input.value;
+        const btnArea = document.querySelector('button.btn-secondary[onclick*="compositionVoiceInput"]');
+        if (btnArea) {
+          btnArea.textContent = '⏹ STOP & TRANSCRIBE';
+          btnArea.onclick = async () => {
+            btnArea.textContent = '🤖 Transcribing...';
+            btnArea.disabled = true;
+            try {
+              const data = await Speech.stopRecording();
+              const text = await Speech.transcribeWithWhisper(data.blob, data.mime);
+              input.value = (oldText ? oldText + ' ' : '') + text;
+              input.placeholder = 'Type your English here...';
+            } catch (e) {
+              App.toast('Whisper failed: ' + e.message);
+            }
+            btnArea.textContent = '🎙️ SPEAK INSTEAD';
+            btnArea.disabled = false;
+            btnArea.onclick = () => Modules.compositionVoiceInput();
+          };
+        }
+      } catch (e) {
+        App.toast('Mic error: ' + e.message);
+      }
+      return;
+    }
+    Speech.startRecognition(
+      (transcript) => {
+        const oldText = input.value;
+        input.value = (oldText ? oldText + ' ' : '') + transcript;
+      },
+      (err) => App.toast('Recognition error: ' + err)
+    );
+  },
+
+  async compositionSubmit() {
+    const input = document.getElementById('compInput');
+    const text = input.value.trim();
+    if (!text) { App.toast('Type something first'); return; }
+    const fb = document.getElementById('compFeedback');
+    if (!Storage.hasApiKey()) {
+      fb.innerHTML = `
+        <div class="api-card">
+          <div class="api-status">⚙️ API KEY REQUIRED</div>
+          <div style="font-size: 12px; color: var(--text); font-weight: 700; line-height: 1.5; margin-bottom: 10px;">
+            AI添削にはOpenAI APIキーが必要です。AI Tutor画面で設定してください。<br>1回約 $0.001（コーヒー1杯/月）。
+          </div>
+          <button class="btn-primary btn-success" onclick="App.openModule('chatgpt-api')">⚙️ SET API KEY</button>
+        </div>
+      `;
+      return;
+    }
+    fb.innerHTML = `
+      <div style="text-align:center; padding: 18px;">
+        <div style="font-size: 30px;">🤖</div>
+        <div style="margin-top: 6px; color: var(--info); font-weight: 900;">AI is analyzing your writing...</div>
+      </div>
+    `;
+    const s = this.compositionState;
+    const sample = s.prompt.sample;
+    const situation = s.prompt.situation;
+    const previousAttempt = s.attempts.length > 0 ? s.attempts[s.attempts.length - 1].userText : null;
+
+    const systemPrompt = `You are an English writing coach for Zacky, a Japanese businessman preparing for a luxury flower sales trip to Indonesia. He is at TOEIC 800+ level. The target audience for his English is high-net-worth Indonesian buyers (sophisticated, discerning).
+
+Your job: analyze his writing for the given situation, then return STRICTLY VALID JSON in this exact shape:
+{
+  "score": 0-100 integer,
+  "summary": "1 sentence overall in Japanese",
+  "grammar": [
+    { "issue": "what's wrong (English)", "fix": "corrected version", "explain_jp": "Japanese explanation" }
+  ],
+  "vocabulary": [
+    { "weak": "the word he used", "better": "more elegant alternative", "reason_jp": "why it's better, in Japanese" }
+  ],
+  "naturalness_jp": "How a native would phrase it differently (Japanese)",
+  "model_answer": "A polished native-level version — same meaning but better. Stay close to his intent.",
+  "encouragement_jp": "1 specific praise for what he did well, in Japanese"
+}
+
+IMPORTANT:
+- Be specific, not generic
+- Limit grammar/vocabulary arrays to top 3 each
+- Match the formality of HNWI Indonesian business context
+- Output ONLY the JSON, no markdown fences, no extra text`;
+
+    const userPrompt = `Situation (in Japanese): ${situation}
+
+His writing (attempt #${s.attempt}):
+"${text}"
+
+${previousAttempt ? `(For reference, his previous attempt was: "${previousAttempt}")` : ''}
+
+A reference model answer (do not copy directly, but use as quality bar): "${sample}"
+
+Analyze and return JSON.`;
+
+    try {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.4,
+          response_format: { type: 'json_object' },
+          max_tokens: 1000
+        })
+      });
+      if (!r.ok) {
+        fb.innerHTML = `<div style="background:#ffe9e9; border:2px solid var(--danger); border-radius:14px; padding:14px; color:var(--danger-dark); font-weight:800;">API error: ${r.status}</div>`;
+        return;
+      }
+      const data = await r.json();
+      const result = JSON.parse(data.choices[0].message.content);
+      s.attempts.push({ userText: text, feedback: result, ts: new Date().toISOString() });
+      this.compositionRenderFeedback(result, text);
+      Storage.recordEvent('composition_attempt');
+      Storage.addXP(s.attempt === 1 ? 15 : 10);
+      this.compositionSaveHistory();
+    } catch (e) {
+      fb.innerHTML = `<div style="background:#ffe9e9; border:2px solid var(--danger); border-radius:14px; padding:14px; color:var(--danger-dark); font-weight:800;">Error: ${e.message}</div>`;
+    }
+  },
+
+  compositionRenderFeedback(fb, userText) {
+    const s = this.compositionState;
+    const score = fb.score || 0;
+    let scoreClass = '';
+    if (score < 50) scoreClass = 'low';
+    else if (score < 80) scoreClass = 'mid';
+    let emoji = '🔥';
+    if (score < 50) emoji = '💪';
+    else if (score < 80) emoji = '👍';
+    else if (score >= 95) emoji = '⭐';
+
+    const grammarHtml = (fb.grammar || []).map(g => `
+      <div class="comp-issue">
+        <div class="comp-issue-original"><span class="comp-issue-label">❌</span> ${g.issue}</div>
+        <div class="comp-issue-fix"><span class="comp-issue-label">✓</span> ${g.fix}</div>
+        <div class="comp-issue-explain">💡 ${g.explain_jp}</div>
+      </div>
+    `).join('');
+
+    const vocabHtml = (fb.vocabulary || []).map(v => `
+      <div class="comp-issue">
+        <div class="comp-issue-original"><span class="comp-issue-label">使った語</span> <b>${v.weak}</b></div>
+        <div class="comp-issue-fix"><span class="comp-issue-label">より上品</span> <b>${v.better}</b></div>
+        <div class="comp-issue-explain">💡 ${v.reason_jp}</div>
+      </div>
+    `).join('');
+
+    const sample = s.prompt.sample;
+    const sampleEsc = sample.replace(/`/g, "'");
+    const modelEsc = (fb.model_answer || '').replace(/`/g, "'");
+
+    document.getElementById('compFeedback').innerHTML = `
+      <div class="comp-score-card" style="background: ${score >= 80 ? '#e8ffd9' : score >= 50 ? '#fff7e0' : '#ffe9e9'};">
+        <div style="font-size: 30px;">${emoji}</div>
+        <div class="diff-score ${scoreClass}">${score}</div>
+        <div class="diff-score-label">COMPOSITION SCORE</div>
+        <div class="comp-summary">${fb.summary || ''}</div>
+      </div>
+
+      <div class="lesson-jp" style="background: linear-gradient(135deg, #fff5d6, #ffe9a8); border-color: var(--accent);">
+        <div class="lesson-label" style="color: var(--accent-dark);">🌸 GREAT JOB</div>
+        <div class="lesson-text">${fb.encouragement_jp || ''}</div>
+      </div>
+
+      ${grammarHtml ? `
+      <div class="section-title" style="margin: 16px 0 8px;">📖 GRAMMAR FIXES (${(fb.grammar || []).length})</div>
+      ${grammarHtml}
+      ` : ''}
+
+      ${vocabHtml ? `
+      <div class="section-title" style="margin: 16px 0 8px;">💎 BETTER VOCABULARY (${(fb.vocabulary || []).length})</div>
+      ${vocabHtml}
+      ` : ''}
+
+      ${fb.naturalness_jp ? `
+      <div class="lesson-grammar">
+        <div class="lesson-label">🗣️ HOW A NATIVE WOULD SAY IT</div>
+        <div class="lesson-text">${fb.naturalness_jp}</div>
+      </div>
+      ` : ''}
+
+      <div class="section-title" style="margin: 16px 0 8px;">🎯 AI MODEL ANSWER</div>
+      <div class="comp-model-card">
+        <div class="comp-model-text">${fb.model_answer || ''}</div>
+        <div style="display: flex; gap: 6px; margin-top: 8px;">
+          <button class="example-speak" onclick="Speech.speak(\`${modelEsc}\`, 0.9)">🔊 LISTEN</button>
+          <button class="example-speak" onclick="Shadowing.start(\`${modelEsc}\`, ${(fb.model_answer || '').length > 60 ? 2 : 1});">🎬 DRILL</button>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin: 16px 0 8px;">📚 REFERENCE SAMPLE</div>
+      <div class="comp-sample-card">
+        <div class="comp-model-text">${sample}</div>
+        <button class="example-speak" style="margin-top: 8px;" onclick="Speech.speak(\`${sampleEsc}\`, 0.9)">🔊 LISTEN</button>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <button class="btn-primary btn-pink" onclick="Modules.compositionRetry()">🔄 RETRY — WRITE BETTER VERSION</button>
+        <button class="btn-primary btn-success" onclick="Modules.compositionFinish()">✓ FINISH (GOT IT)</button>
+        <button class="btn-secondary" onclick="Modules.compositionStart()">🎲 NEW PROMPT</button>
+      </div>
+    `;
+    setTimeout(() => {
+      const el = document.getElementById('compFeedback');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  },
+
+  compositionRetry() {
+    if (!this.compositionState) return;
+    this.compositionState.attempt += 1;
+    this.compositionRender();
+  },
+
+  compositionFinish() {
+    if (!this.compositionState) return;
+    const s = this.compositionState;
+    const finishBonus = 10;
+    const totalXp = (s.attempts.length === 1 ? 15 : 15 + (s.attempts.length - 1) * 10) + finishBonus;
+    Storage.addXP(finishBonus);
+    App.confetti(40);
+    Storage.markDone('composition');
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">✍️ COMPOSITION COMPLETE</div>
+      <div class="burst-card">
+        <div class="burst-emoji">🌸</div>
+        <div class="burst-title">${s.attempts.length} ${s.attempts.length === 1 ? 'attempt' : 'attempts'}</div>
+        <div class="burst-msg">Final score: ${s.attempts[s.attempts.length-1].feedback.score}<br>You wrote with your own words.</div>
+        <div style="margin-top: 12px;"><span class="xp-badge" style="font-size: 14px; padding: 6px 16px;">+${totalXp} XP total</span></div>
+      </div>
+      <button class="btn-primary btn-pink" onclick="Modules.compositionStart()">🎲 ANOTHER PROMPT</button>
+      <button class="btn-primary btn-success" onclick="App.closeModal()">DONE FOR NOW</button>
+    `;
+    this.compositionState = null;
+  },
+
+  compositionSaveHistory() {
+    if (!this.compositionState) return;
+    const hist = Storage.get('comp_history', []);
+    const s = this.compositionState;
+    const existing = hist.findIndex(h => h.startedAt === s.startedAt);
+    const record = {
+      situation: s.prompt.situation,
+      level: s.prompt.level,
+      attempts: s.attempts,
+      startedAt: s.startedAt,
+      lastAt: new Date().toISOString()
+    };
+    if (existing >= 0) hist[existing] = record;
+    else hist.unshift(record);
+    Storage.set('comp_history', hist.slice(0, 50));
+  },
+
+  compositionHistory() {
+    const hist = Storage.get('comp_history', []);
+    let html = `<div class="modal-title">📓 PAST COMPOSITION ATTEMPTS · ${hist.length}</div><button class="btn-secondary" onclick="Modules.composition()">← BACK</button>`;
+    if (hist.length === 0) {
+      html += `<div style="color:var(--text-soft); text-align:center; padding:40px 0; font-weight: 800;">No attempts yet. Start your first one!</div>`;
+    } else {
+      hist.forEach((h) => {
+        const lastFb = h.attempts[h.attempts.length - 1];
+        const score = lastFb && lastFb.feedback ? lastFb.feedback.score : '?';
+        html += `
+          <div class="diary-entry">
+            <div class="diary-date">${h.lastAt.slice(0, 10)} · ${h.level.toUpperCase()} · Score ${score} · ${h.attempts.length} ${h.attempts.length === 1 ? 'try' : 'tries'}</div>
+            <div class="diary-text"><b>${h.situation}</b><br><br>Your last: "${h.attempts[h.attempts.length-1].userText}"</div>
+          </div>
+        `;
+      });
+    }
+    document.getElementById('modalBody').innerHTML = html;
+  },
+
+  // ===========================================
   // ☀️ 朝の一発スタート（Daily Flow）
   // タップ1回で「シャドー→発音チェック→メディア→日記」を連結
   // ===========================================
@@ -932,8 +1304,9 @@ const Modules = {
       { idx: 0, icon: '🪞', name: 'Declaration', desc: '今日のアイデンティティ宣言（10秒）', xp: 5 },
       { idx: 1, icon: '🎬', name: 'Shadowing Session', desc: '短文2 + 長文1（自動選択）', xp: 60 },
       { idx: 2, icon: '📊', name: 'Pronunciation Check', desc: '発音をチェック（録音→AI判定）', xp: 5 },
-      { idx: 3, icon: '🎧', name: "Today's Media", desc: '今日のおすすめポッドキャスト＆動画', xp: 15 },
-      { idx: 4, icon: '📔', name: '3-Line Diary', desc: '今日の振り返り3行', xp: 15 },
+      { idx: 3, icon: '✍️', name: 'Composition', desc: '英作文 → AI添削 → 書き直し', xp: 25 },
+      { idx: 4, icon: '🎧', name: "Today's Media", desc: '今日のおすすめポッドキャスト＆動画', xp: 15 },
+      { idx: 5, icon: '📔', name: '3-Line Diary', desc: '今日の振り返り3行', xp: 15 },
     ];
     const s = this.dailyFlowState;
     const total = steps.length;
@@ -1011,7 +1384,7 @@ const Modules = {
       // Declaration — 完了でadvance
       const onDone = () => { this.dailyFlowAdvance(); };
       document.getElementById('modalBody').innerHTML = `
-        <div class="modal-title">☀️ STEP 1/5 · MORNING DECLARATION</div>
+        <div class="modal-title">☀️ STEP 1/6 · MORNING DECLARATION</div>
         <div class="why-card">
           <div class="why-label">🎯 WHY THIS</div>
           <div class="why-text">${PURPOSE.declaration.why}</div>
@@ -1040,15 +1413,161 @@ const Modules = {
     }
 
     if (step === 3) {
-      // Today's Media — listenモジュールに「次へ」ボタン埋め込み
-      this.dailyFlowMedia();
+      // Composition — フロー専用：軽め（easy）でランダムプロンプト
+      this.dailyFlowComposition();
       return;
     }
 
     if (step === 4) {
+      // Today's Media
+      this.dailyFlowMedia();
+      return;
+    }
+
+    if (step === 5) {
       // Diary — 完了時にadvance
       this.dailyFlowDiary();
       return;
+    }
+  },
+
+  // Daily Flow内のComposition：軽量版でランダム1問
+  dailyFlowComposition() {
+    const easyPool = COMPOSITION_PROMPTS.filter(p => p.level === 'easy');
+    const prompt = easyPool[Math.floor(Math.random() * easyPool.length)];
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">☀️ STEP 4/6 · COMPOSITION</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">${PURPOSE.composition.why}</div>
+        <div class="why-impact">${PURPOSE.composition.impact}</div>
+      </div>
+      <div class="comp-prompt-card">
+        <div class="comp-prompt-label">📝 SITUATION</div>
+        <div class="comp-prompt-text">${prompt.situation}</div>
+        ${prompt.hint ? `<div class="comp-prompt-hint">💡 ${prompt.hint}</div>` : ''}
+        <div class="comp-prompt-level">🟢 EASY · 1 sentence</div>
+      </div>
+      <div class="label">YOUR ENGLISH</div>
+      <textarea id="dfCompInput" rows="3" placeholder="Type your English here..."></textarea>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="Modules.dailyFlowCompVoice()">🎙️ SPEAK</button>
+        <button class="btn-secondary" onclick="document.getElementById('dfCompInput').value=''">🗑 CLEAR</button>
+      </div>
+      <button class="btn-primary btn-pink" onclick="Modules.dailyFlowCompSubmit()" data-prompt='${JSON.stringify({s: prompt.situation, p: prompt.sample}).replace(/'/g, "&#39;")}'>✓ GET FEEDBACK</button>
+      <div id="dfCompFeedback"></div>
+      <button class="btn-secondary" onclick="Modules.dailyFlowAdvance(0);">⏭ SKIP & NEXT →</button>
+      <button class="btn-secondary" onclick="Modules.dailyFlow()">← BACK TO FLOW</button>
+    `;
+    window._dfCompPrompt = prompt;
+  },
+
+  async dailyFlowCompVoice() {
+    const input = document.getElementById('dfCompInput');
+    if (!input || !Storage.hasApiKey()) {
+      // 簡易フォールバック
+      Speech.startRecognition(
+        (t) => { input.value = (input.value ? input.value + ' ' : '') + t; },
+        (err) => App.toast('Recognition error: ' + err)
+      );
+      return;
+    }
+    try {
+      await Speech.startRecording();
+      const oldText = input.value;
+      input.placeholder = '🎙️ Recording... tap voice button again to stop';
+      const btnArea = document.querySelector('button[onclick*="dailyFlowCompVoice"]');
+      if (btnArea) {
+        btnArea.textContent = '⏹ STOP';
+        btnArea.onclick = async () => {
+          btnArea.textContent = '🤖 Transcribing...';
+          btnArea.disabled = true;
+          try {
+            const data = await Speech.stopRecording();
+            const text = await Speech.transcribeWithWhisper(data.blob, data.mime);
+            input.value = (oldText ? oldText + ' ' : '') + text;
+          } catch (e) { App.toast('Whisper failed'); }
+          btnArea.textContent = '🎙️ SPEAK';
+          btnArea.disabled = false;
+          btnArea.onclick = () => Modules.dailyFlowCompVoice();
+        };
+      }
+    } catch (e) {
+      App.toast('Mic error');
+    }
+  },
+
+  async dailyFlowCompSubmit() {
+    const input = document.getElementById('dfCompInput');
+    const text = input.value.trim();
+    if (!text) { App.toast('Type something first'); return; }
+    const fb = document.getElementById('dfCompFeedback');
+    if (!Storage.hasApiKey()) {
+      fb.innerHTML = `
+        <div class="api-card">
+          <div class="api-status">⚙️ API KEY REQUIRED</div>
+          <div style="font-size: 12px; color: var(--text); font-weight: 700; line-height: 1.5; margin-bottom: 10px;">AI添削にはOpenAI APIキーが必要です。</div>
+          <button class="btn-primary btn-success" onclick="App.openModule('chatgpt-api')">⚙️ SET API KEY</button>
+        </div>
+        <button class="btn-primary btn-success" onclick="Modules.dailyFlowAdvance(10);">✓ NEXT STEP →</button>
+      `;
+      return;
+    }
+    fb.innerHTML = `<div style="text-align:center; padding: 18px;"><div style="font-size: 30px;">🤖</div><div style="margin-top: 6px; color: var(--info); font-weight: 900;">Analyzing...</div></div>`;
+    const prompt = window._dfCompPrompt;
+    try {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: 'You are an English writing coach. Output JSON: {"score":int,"summary":"jp 1 sentence","grammar":[{"issue","fix","explain_jp"}],"vocabulary":[{"weak","better","reason_jp"}],"model_answer":"polished version"}. Be concise. Limit each array to 2 items.' },
+            { role: 'user', content: `Situation: ${prompt.situation}\n\nWriting: "${text}"\n\nReference: "${prompt.sample}"` }
+          ],
+          temperature: 0.4,
+          response_format: { type: 'json_object' },
+          max_tokens: 600
+        })
+      });
+      const data = await r.json();
+      const result = JSON.parse(data.choices[0].message.content);
+      Storage.recordEvent('composition_attempt');
+
+      const grammarHtml = (result.grammar || []).map(g => `
+        <div class="comp-issue">
+          <div class="comp-issue-original"><span class="comp-issue-label">❌</span> ${g.issue}</div>
+          <div class="comp-issue-fix"><span class="comp-issue-label">✓</span> ${g.fix}</div>
+          <div class="comp-issue-explain">💡 ${g.explain_jp}</div>
+        </div>
+      `).join('');
+      const vocabHtml = (result.vocabulary || []).map(v => `
+        <div class="comp-issue">
+          <div class="comp-issue-original"><span class="comp-issue-label">使った語</span> <b>${v.weak}</b></div>
+          <div class="comp-issue-fix"><span class="comp-issue-label">より上品</span> <b>${v.better}</b></div>
+          <div class="comp-issue-explain">💡 ${v.reason_jp}</div>
+        </div>
+      `).join('');
+
+      fb.innerHTML = `
+        <div class="comp-score-card" style="background: ${result.score >= 80 ? '#e8ffd9' : result.score >= 50 ? '#fff7e0' : '#ffe9e9'};">
+          <div class="diff-score ${result.score < 50 ? 'low' : result.score < 80 ? 'mid' : ''}">${result.score}</div>
+          <div class="diff-score-label">SCORE</div>
+          <div class="comp-summary">${result.summary || ''}</div>
+        </div>
+        ${grammarHtml ? `<div class="section-title" style="margin: 14px 0 6px;">📖 GRAMMAR</div>${grammarHtml}` : ''}
+        ${vocabHtml ? `<div class="section-title" style="margin: 14px 0 6px;">💎 VOCABULARY</div>${vocabHtml}` : ''}
+        ${result.model_answer ? `
+        <div class="section-title" style="margin: 14px 0 6px;">🎯 MODEL ANSWER</div>
+        <div class="comp-model-card">
+          <div class="comp-model-text">${result.model_answer}</div>
+          <button class="example-speak" style="margin-top: 8px;" onclick="Speech.speak(\`${(result.model_answer || '').replace(/`/g,"'")}\`, 0.9)">🔊 LISTEN</button>
+        </div>
+        ` : ''}
+        <button class="btn-primary btn-success" onclick="Modules.dailyFlowAdvance(25);">✓ GOT IT · NEXT STEP →</button>
+      `;
+    } catch (e) {
+      fb.innerHTML = `<div style="background:#ffe9e9; border:2px solid var(--danger); border-radius:14px; padding:14px; color:var(--danger-dark); font-weight:800;">Error: ${e.message}</div><button class="btn-primary btn-success" onclick="Modules.dailyFlowAdvance(10);">SKIP & NEXT →</button>`;
     }
   },
 
@@ -1059,7 +1578,7 @@ const Modules = {
     s.step = (s.step || 0) + 1;
     Storage.set('dailyFlow_' + today, s);
     this.dailyFlowState = s;
-    window._inDailyFlow = (s.step < 5);
+    window._inDailyFlow = (s.step < 6);
     this.dailyFlow();
   },
 
@@ -1075,7 +1594,7 @@ const Modules = {
     // フロー専用の発音チェック画面（自己紹介Hookを練習）
     const target = "Japan grows some of the most beautiful flowers in the world. I'm Zacky, and I'm here to change that.";
     document.getElementById('modalBody').innerHTML = `
-      <div class="modal-title">☀️ STEP 3/5 · PRONUNCIATION CHECK</div>
+      <div class="modal-title">☀️ STEP 3/6 · PRONUNCIATION CHECK</div>
       <div class="why-card">
         <div class="why-label">🎯 WHY THIS</div>
         <div class="why-text">${PURPOSE.pronunciation.why}</div>
@@ -1156,7 +1675,7 @@ const Modules = {
     const day = new Date().getDay();
     const media = DAILY_MEDIA[day];
     document.getElementById('modalBody').innerHTML = `
-      <div class="modal-title">☀️ STEP 4/5 · TODAY'S MEDIA</div>
+      <div class="modal-title">☀️ STEP 5/6 · TODAY'S MEDIA</div>
       <div class="why-card">
         <div class="why-label">🎯 WHY THIS</div>
         <div class="why-text">毎日違うテーマで自動推薦。あなたが教材を探す時間ゼロ。</div>
@@ -1186,7 +1705,7 @@ const Modules = {
     const today = Storage.todayKey();
     const existing = Storage.get('diary_' + today, { a:'', b:'', c:'' });
     document.getElementById('modalBody').innerHTML = `
-      <div class="modal-title">☀️ STEP 5/5 · 3-LINE DIARY</div>
+      <div class="modal-title">☀️ STEP 6/6 · 3-LINE DIARY</div>
       <div class="why-card">
         <div class="why-label">🎯 WHY THIS</div>
         <div class="why-text">${PURPOSE.diary.why}</div>

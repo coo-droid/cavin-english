@@ -12,7 +12,7 @@ const App = {
     });
     // Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=7').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=8').catch(() => {});
     }
     // 起動時にアチーブメントチェック
     setTimeout(() => this.checkAchievements(), 800);
@@ -274,6 +274,7 @@ const App = {
       case 'daily-flow': Modules.dailyFlow(); break;
       case 'live-talk': Modules.liveTalk(); break;
       case 'report-settings': Modules.reportSettings(); break;
+      case 'composition': Modules.composition(); break;
       default:
         document.getElementById('modalBody').innerHTML = `<div class="modal-title">COMING SOON</div><button class="btn-primary" onclick="App.closeModal()">CLOSE</button>`;
     }

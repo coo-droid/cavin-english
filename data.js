@@ -709,6 +709,10 @@ const PURPOSE = {
   emergency: {
     why: "完璧主義は習慣の最大の敵。忙しい日でも2分だけ触ることで、連続が途切れない。「やめないこと」が「上達すること」より大事な時期がある。",
     impact: "→ ストリークを守る最終手段"
+  },
+  composition: {
+    why: "受け身の練習だけでは話せるようにならない。お題に対して自分で英文を組み立て、AIに文法・語彙・自然さを指摘してもらい、改善版で書き直す。これで本当に「使える英語」になる。",
+    impact: "→ 商談で自分の言葉で話せる力"
   }
 };
 
@@ -857,6 +861,69 @@ const DAILY_MEDIA = [
       catchPhrase: "Goal: shadow the first 3 minutes after 5 listens."
     }
   }
+];
+
+// =====================================================
+// Composition Trainer 用プロンプト
+// 各お題：situation（状況・日本語）/ hint（英語で使うべき要素）/ level / sample（モデル回答）
+// =====================================================
+const COMPOSITION_PROMPTS = [
+  // === Easy（1文） ===
+  { level: 'easy', situation: '商談相手に、CAVINの強みを一言で。',
+    hint: 'Use: direct grower network / FedEx / fastest delivery',
+    sample: "We bring Japan's finest flowers to the world through our direct grower network and FedEx partnership for fastest international delivery." },
+  { level: 'easy', situation: '初対面の挨拶。あなたが何者かを名乗る。',
+    hint: 'Use: partner, CAVIN, Japan, flowers',
+    sample: "I'm Zacky, partner at CAVIN — we bring Japan's finest flowers to the world." },
+  { level: 'easy', situation: '相手に時間を作ってくれた感謝を伝える。',
+    hint: 'Use: making time / pleasure / look forward',
+    sample: "Thank you for making time. It's a real pleasure to meet you." },
+  { level: 'easy', situation: '「高い」と言われたとき、ひとことで価値を返す。',
+    hint: "Use: priced / what's behind / craft",
+    sample: "It's priced where it is because of the craft behind every stem." },
+  { level: 'easy', situation: '相手の話に深く興味を持っていることを伝える。',
+    hint: 'Use: love to / story / behind',
+    sample: "I'd love to hear the story behind that." },
+  { level: 'easy', situation: '初対面の相手に、何が一番大切か聞く。',
+    hint: 'Use: matters most',
+    sample: "What matters most to you in a partnership?" },
+  { level: 'easy', situation: '相手が正直に話してくれたことに感謝。',
+    hint: 'Use: appreciate / honesty',
+    sample: "I appreciate your honesty — it means a lot." },
+  { level: 'easy', situation: '即決を避け、誠実に時間をもらう。',
+    hint: 'Use: rather / right number',
+    sample: "I'd rather give you the right number than a fast one." },
+
+  // === Medium（2-3文） ===
+  { level: 'medium', situation: 'なぜインドネシアに来たのかを2文で語る。お世辞ではなく観察として。',
+    hint: 'Use: love of beauty / same language / Japanese flowers',
+    sample: "Indonesia is one of the most exciting markets I've seen. The way people here celebrate beauty speaks the same language as Japanese flowers." },
+  { level: 'medium', situation: '相手が「Dutch flowersのほうが安い」と言ってきた。3文で品よく返す。',
+    hint: 'Use: different philosophies / volume vs story / not compete',
+    sample: "Different philosophies. Dutch is volume — and they're great at it. We offer seasonality, story, and soul. We don't compete with them." },
+  { level: 'medium', situation: '商談を「売る」ではなく「分かち合う」場として位置づけ直す。3文。',
+    hint: 'Use: not here to sell / share / craft and story',
+    sample: "I'm not here to sell. I'm here to share. To meet people who appreciate craft, story, and quiet beauty." },
+  { level: 'medium', situation: '商談の終盤、紹介をお願いする。押し売りせず2-3文で。',
+    hint: 'Use: someone in your circle / honored / introduction',
+    sample: "If someone in your circle would care about Japanese flowers, I'd be honored if you mentioned us. Beyond that — nothing today." },
+  { level: 'medium', situation: '「あなたから買う理由は？」と聞かれた。営業マンではないことを伝える。',
+    hint: 'Use: not a salesperson / left a comfortable career',
+    sample: "You're not getting a salesperson. You're getting someone who left a comfortable career to do this — because I believe in it." },
+
+  // === Hard（パラグラフ） ===
+  { level: 'hard', situation: '自己紹介の最初の20秒（Hook）を自分の言葉で書く。日本の花の現状を描き、自分の使命を宣言する。',
+    hint: 'Structure: Reality → Problem → Your role',
+    sample: "Japan grows some of the most beautiful flowers in the world. But almost no one outside Japan knows it. I'm Zacky, and I'm here to change that." },
+  { level: 'hard', situation: 'CAVINの差別化ポイントを4文で。物流の強みとFedExパートナーシップを盛り込む。',
+    hint: 'Structure: Network → Speed → Result → Authority',
+    sample: "We've built Japan's most direct grower-to-customer logistics network. Through our FedEx partnership, we deliver internationally as fast as we deliver within Japan. A flower cut in the morning can be in your hands anywhere in the world within 48 to 72 hours. Almost no one else can do that." },
+  { level: 'hard', situation: '「失われた世代」の使命を、自分の言葉で語る。3-4文。',
+    hint: 'Structure: Background → Observation → Mission',
+    sample: "I belong to what we call Japan's lost generation — we grew up watching our country lose its confidence. But I think our role is exactly that. To remind Japan, and the world, that Japan still has things worth bringing out." },
+  { level: 'hard', situation: 'クロージング。資産家相手に「Yes / No / 紹介」の3つの選択肢を品よく出す。',
+    hint: 'Structure: If yes → If no → Referral ask',
+    sample: "If this resonates, let's talk seriously about a partnership. If it doesn't, tell me — I'd rather know now. And if there's someone in your circle who would care, I'd be grateful for an introduction." },
 ];
 
 const ACHIEVEMENTS = [

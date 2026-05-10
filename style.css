@@ -1564,3 +1564,135 @@ textarea:focus, input:focus { outline: none; border-color: var(--info); }
   padding: 14px;
   margin-bottom: 12px;
 }
+
+/* =========================
+   Composition Trainer
+   ========================= */
+.comp-prompt-card {
+  background: linear-gradient(135deg, #fff0f4 0%, #ffe0ec 100%);
+  border: 2px solid var(--primary);
+  border-bottom-width: 4px;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.comp-prompt-label {
+  font-size: 10px;
+  color: var(--primary-dark);
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  margin-bottom: 6px;
+}
+.comp-prompt-text {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+.comp-prompt-hint {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--primary-dark);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  font-style: italic;
+}
+.comp-prompt-level {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-soft);
+  letter-spacing: 0.5px;
+}
+
+.comp-score-card {
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 12px;
+  text-align: center;
+  border: 2px solid var(--line);
+  border-bottom-width: 3px;
+}
+.comp-summary {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.comp-issue {
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-bottom-width: 3px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.comp-issue-label {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  margin-right: 6px;
+  background: var(--bg-soft);
+}
+.comp-issue-original {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--danger-dark);
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+.comp-issue-original .comp-issue-label {
+  background: #ffd6d6;
+  color: var(--danger-dark);
+}
+.comp-issue-fix {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--success-dark);
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+.comp-issue-fix .comp-issue-label {
+  background: #d4f7b8;
+  color: var(--success-dark);
+}
+.comp-issue-explain {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-soft);
+  line-height: 1.5;
+  margin-top: 4px;
+  padding: 6px 8px;
+  background: var(--bg-soft);
+  border-radius: 6px;
+}
+
+.comp-model-card {
+  background: linear-gradient(135deg, #e6f6ff, #d2ebff);
+  border: 2px solid var(--info);
+  border-bottom-width: 3px;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.comp-sample-card {
+  background: linear-gradient(135deg, #fff7e0, #ffeec2);
+  border: 2px solid var(--accent);
+  border-bottom-width: 3px;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.comp-model-text {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.6;
+}
