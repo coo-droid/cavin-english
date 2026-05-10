@@ -1,16 +1,16 @@
 // CAVIN English Service Worker - Offline support
-const CACHE_NAME = 'cavin-english-v8';
+const CACHE_NAME = 'cavin-english-v9';
 const ASSETS = [
   './',
   './index.html',
-  './style.css?v=8',
-  './data.js?v=8',
-  './storage.js?v=8',
-  './speech.js?v=8',
-  './vocab.js?v=8',
-  './shadowing.js?v=8',
-  './modules.js?v=8',
-  './app.js?v=8'
+  './style.css?v=9',
+  './data.js?v=9',
+  './storage.js?v=9',
+  './speech.js?v=9',
+  './vocab.js?v=9',
+  './shadowing.js?v=9',
+  './modules.js?v=9',
+  './app.js?v=9'
 ];
 
 self.addEventListener('install', (e) => {

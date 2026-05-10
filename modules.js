@@ -146,9 +146,12 @@ const Modules = {
   },
 
   // ========== シャドーイングHub ==========
-  shadowingHub() {
+  shadowingHub(slot) {
+    // slot: 'am' / 'pm' / undefined。Shadowing.completeSession 内で参照
+    window._shadowingSlot = slot || null;
+    const slotLabel = slot === 'am' ? '☀️ MORNING SHADOWING · ' : slot === 'pm' ? '🌙 MAIN (NIGHT) SHADOWING · ' : '';
     document.getElementById('modalBody').innerHTML = `
-      <div class="modal-title">SHADOWING SESSION</div>
+      <div class="modal-title">${slotLabel}SHADOWING SESSION</div>
 
       <!-- なぜシャドーイングをやるか -->
       <div class="why-card">
@@ -537,15 +540,29 @@ const Modules = {
   },
 
   // ========== Listen / Roleplay (ChatGPT) ==========
-  listen() {
+  listen(slot) {
+    // slot: 'am' / 'pm' / undefined（クイックアクセスから直接の場合は両方完了扱い）
     const day = new Date().getDay();
     const media = DAILY_MEDIA[day];
     const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const isAm = slot === 'am';
+    const isPm = slot === 'pm';
+    const slotLabel = isAm ? '☀️ MORNING SESSION' : isPm ? '🌙 EVENING SESSION' : '';
+    const doneCmd = isAm
+      ? "Storage.markDone('listen-am')"
+      : isPm
+      ? "Storage.markDone('listen-pm')"
+      : "Storage.markDone('listen-am'); Storage.markDone('listen-pm')";
+    const slotWhy = isAm
+      ? '朝の通勤・準備中に耳から英語を入れる時間。1日の英語回路を起動。'
+      : isPm
+      ? '帰り道に同じ番組の続きを聞く、または別パートで耳の筋トレ。1日2回の刺激で定着が違う。'
+      : '毎日違うテーマで自動推薦。あなたが教材を探す時間ゼロ。';
     document.getElementById('modalBody').innerHTML = `
-      <div class="modal-title">TODAY'S MEDIA · ${dayNames[day].toUpperCase()}</div>
+      <div class="modal-title">${slotLabel ? slotLabel + ' · ' : ''}TODAY'S MEDIA · ${dayNames[day].toUpperCase()}</div>
       <div class="why-card">
         <div class="why-label">🎯 WHY TODAY'S PICKS</div>
-        <div class="why-text">毎日違うテーマで自動推薦。あなたが教材を探す時間ゼロ。今日の組み合わせで耳と頭が両方鍛えられる。</div>
+        <div class="why-text">${slotWhy}</div>
         <div class="why-impact">→ 完全自動・選ぶストレスなし</div>
       </div>
 
@@ -573,7 +590,7 @@ const Modules = {
         <a href="${media.video.url}" target="_blank" class="btn-primary btn-pink" style="text-decoration:none; text-align:center; display:block;">🔗 OPEN VIDEO</a>
       </div>
 
-      <button class="btn-primary btn-success" style="margin-top:14px;" onclick="Storage.markDone('listen'); App.awardXP(15, event); App.toast('+15 XP for listening ✓', 'xp'); App.closeModal();">✓ I LISTENED (+15 XP)</button>
+      <button class="btn-primary btn-success" style="margin-top:14px;" onclick="${doneCmd}; App.awardXP(15, event); App.toast('+15 XP for listening ✓', 'xp'); App.closeModal();">✓ I LISTENED (+15 XP)</button>
     `;
   },
 

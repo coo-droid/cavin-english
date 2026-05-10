@@ -68,7 +68,18 @@ const Shadowing = {
   completeSession() {
     Speech.cancel();
     this.stopTimer();
-    Storage.markDone('shadowing-hub');
+    // どの時間帯のシャドーイングか判定してmarkDone
+    const slot = window._shadowingSlot;
+    if (slot === 'am') {
+      Storage.markDone('shadowing-am');
+    } else if (slot === 'pm') {
+      Storage.markDone('shadowing-pm');
+    } else {
+      // クイックアクセス起動の場合は両方完了扱い（時間によって判別）
+      const h = new Date().getHours();
+      Storage.markDone(h < 14 ? 'shadowing-am' : 'shadowing-pm');
+    }
+    window._shadowingSlot = null;
     const elapsed = this.formatTime(this.state.elapsedMs);
     const totalReps = this.state.session.reduce((s, i) => s + i.target, 0);
     const xp = 60; // 短文2+長文1 完走で60 XP

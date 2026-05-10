@@ -5,18 +5,19 @@
 const TARGET_DATE = '2026-07-23'; // インドネシア商談日
 
 const SCHEDULE = [
-  { time: '06:30', mins: 390, key: 'declaration', icon: '🪞', name: 'Morning Declaration', desc: 'Identity reset in front of the mirror.' },
-  { time: '06:45', mins: 405, key: 'hook',        icon: '🚿', name: 'Shower Hook',         desc: 'Recite self-intro hook 3 times.' },
-  { time: '07:15', mins: 435, key: 'listen',      icon: '☕', name: 'Morning Podcast',     desc: 'Launch Monocle: The Entrepreneurs.' },
-  { time: '08:00', mins: 480, key: 'shadowing-hub', icon: '🎧', name: 'Commute Shadowing', desc: 'Shadowing drill with target reps.' },
-  { time: '10:00', mins: 600, key: 'flash-am',    icon: '🃏', name: 'Morning Flash',       desc: "Today's Q&A — morning slot." },
-  { time: '12:00', mins: 720, key: 'flash-noon',  icon: '🃏', name: 'Noon Flash',          desc: "Today's Q&A — noon slot." },
-  { time: '12:45', mins: 765, key: 'phrase-today',icon: '📝', name: "Today's Phrase",      desc: "Speak today's phrase aloud 3 times." },
-  { time: '15:00', mins: 900, key: 'flash-pm',    icon: '🃏', name: 'Afternoon Flash',     desc: "Today's Q&A — afternoon slot." },
-  { time: '18:00', mins: 1080,key: 'listen',      icon: '🚶', name: 'Evening Listen',      desc: 'Podcast on the way home.' },
-  { time: '21:00', mins: 1260,key: 'shadowing-hub', icon: '🎬', name: 'Main Shadowing',    desc: '10-min focused practice + recording.' },
-  { time: '22:00', mins: 1320,key: 'flash-night', icon: '🃏', name: 'Night Flash',         desc: 'Last Q&A before bed.' },
-  { time: '22:10', mins: 1330,key: 'diary',       icon: '📔', name: '3-Line Diary',        desc: 'Reflect and sleep.' },
+  { time: '06:30', mins: 390, key: 'declaration',   icon: '🪞', name: 'Morning Declaration', desc: 'Identity reset in front of the mirror.' },
+  { time: '06:45', mins: 405, key: 'hook',          icon: '🚿', name: 'Shower Hook',         desc: 'Recite self-intro hook 3 times.' },
+  { time: '07:15', mins: 435, key: 'listen-am',     icon: '☕', name: 'Morning Podcast',     desc: "Today's auto-picked podcast & video." },
+  { time: '08:00', mins: 480, key: 'shadowing-am',  icon: '🎧', name: 'Commute Shadowing',   desc: 'Shadowing drill — short 2 + long 1.' },
+  { time: '10:00', mins: 600, key: 'flash-am',      icon: '🃏', name: 'Morning Flash',       desc: "Today's Q&A — morning slot." },
+  { time: '12:00', mins: 720, key: 'flash-noon',    icon: '🃏', name: 'Noon Flash',          desc: "Today's Q&A — noon slot." },
+  { time: '12:45', mins: 765, key: 'phrase-today',  icon: '📝', name: "Today's Phrase",      desc: "Speak today's phrase aloud 3 times." },
+  { time: '13:30', mins: 810, key: 'composition',   icon: '✍️', name: 'Composition',         desc: 'Write English & get AI feedback.' },
+  { time: '15:00', mins: 900, key: 'flash-pm',      icon: '🃏', name: 'Afternoon Flash',     desc: "Today's Q&A — afternoon slot." },
+  { time: '18:00', mins: 1080,key: 'listen-pm',     icon: '🚶', name: 'Evening Listen',      desc: 'Same media — finish or rewatch on the go.' },
+  { time: '21:00', mins: 1260,key: 'shadowing-pm',  icon: '🎬', name: 'Main Shadowing',      desc: '10-min focused practice + recording.' },
+  { time: '22:00', mins: 1320,key: 'flash-night',   icon: '🃏', name: 'Night Flash',         desc: 'Last Q&A before bed.' },
+  { time: '22:10', mins: 1330,key: 'diary',         icon: '📔', name: '3-Line Diary',        desc: 'Reflect and sleep.' },
 ];
 
 // 28枚フラッシュ — q（質問）+ qJp（質問訳）+ a（答え）+ aJp（答え訳）+ grammar（文法）
@@ -720,13 +721,16 @@ const PURPOSE = {
 // 毎日のメディアおすすめ（ローテーション）
 // 各日 = ポッドキャスト1 + 動画1。範囲指定で「ここまで聞けばOK」を明示
 // =====================================================
+// =====================================================
+// 各URLは実在チェック済み or 検索URL（必ず開ける）
+// =====================================================
 const DAILY_MEDIA = [
   // Day 0 (日曜) - 雑談・人生観
   {
     podcast: {
       title: "How I Built This: Tatcha — Vicky Tsai",
-      url: "https://www.npr.org/podcasts/510313/how-i-built-this",
-      search: "https://www.npr.org/2019/07/05/738976034/tatcha-vicky-tsai",
+      url: "https://open.spotify.com/search/How%20I%20Built%20This%20Tatcha%20Vicky%20Tsai",
+      search: "https://open.spotify.com/search/How%20I%20Built%20This%20Tatcha%20Vicky%20Tsai",
       duration: "53 min",
       listen: "0:00 〜 18:00（最初の18分のみ）",
       why: "日本文化×ラグジュアリーブランドの起業ストーリー。あなたと完全に同じテーマ。Vickyが語る『日本の美意識』をどう英語で売るかの教科書。",
@@ -744,17 +748,17 @@ const DAILY_MEDIA = [
   // Day 1 (月曜) - 商談・交渉
   {
     podcast: {
-      title: "HBR IdeaCast: How to Negotiate When You Have Less Power",
-      url: "https://hbr.org/podcasts/ideacast",
-      search: "https://www.google.com/search?q=HBR+IdeaCast+negotiate+less+power+spotify",
+      title: "HBR IdeaCast: Negotiation",
+      url: "https://open.spotify.com/search/HBR%20IdeaCast%20negotiation",
+      search: "https://open.spotify.com/search/HBR%20IdeaCast%20negotiation",
       duration: "27 min",
       listen: "0:00 〜 15:00（前半のみで充分）",
       why: "富裕層相手に押し売りせず勝つ方法。あなたの価格交渉に直結する英語表現が満載。",
       catchPhrase: "Listen for: phrases like 'reframe', 'leverage', 'walk away point'."
     },
     video: {
-      title: "Bloomberg: How to sell to the ultra-rich",
-      url: "https://www.youtube.com/results?search_query=bloomberg+selling+ultra+rich+luxury",
+      title: "Bloomberg: How the ultra-rich shop",
+      url: "https://www.youtube.com/results?search_query=bloomberg+ultra+rich+luxury+shopping",
       duration: "10 min",
       watch: "0:00 〜 7:00（要点のみ）",
       why: "富裕層営業のリアル。ナレーターの英語スピード感に慣れる。",
@@ -765,8 +769,8 @@ const DAILY_MEDIA = [
   {
     podcast: {
       title: "Monocle Radio: The Foreign Desk — Indonesia",
-      url: "https://monocle.com/radio/shows/the-foreign-desk/",
-      search: "https://www.google.com/search?q=monocle+the+foreign+desk+indonesia",
+      url: "https://open.spotify.com/search/Monocle%20The%20Foreign%20Desk%20Indonesia",
+      search: "https://open.spotify.com/search/Monocle%20The%20Foreign%20Desk%20Indonesia",
       duration: "30 min",
       listen: "0:00 〜 20:00",
       why: "インドネシアのビジネス文化を英語で学ぶ。商談相手への理解が深まる。",
@@ -774,7 +778,7 @@ const DAILY_MEDIA = [
     },
     video: {
       title: "Tatler Asia: Inside Jakarta's elite",
-      url: "https://www.youtube.com/results?search_query=tatler+asia+jakarta+elite+interview",
+      url: "https://www.youtube.com/results?search_query=tatler+asia+jakarta+billionaire+interview",
       duration: "12 min",
       watch: "全編",
       why: "ジャカルタ富裕層の生活を英語で見る。会話のネタになる。",
@@ -785,7 +789,7 @@ const DAILY_MEDIA = [
   {
     podcast: {
       title: "Monocle: The Entrepreneurs",
-      url: "https://monocle.com/radio/shows/the-entrepreneurs/",
+      url: "https://open.spotify.com/search/Monocle%20The%20Entrepreneurs",
       search: "https://open.spotify.com/search/Monocle%20The%20Entrepreneurs",
       duration: "30 min",
       listen: "Pick the latest episode, listen 0:00 〜 15:00",
@@ -794,7 +798,7 @@ const DAILY_MEDIA = [
     },
     video: {
       title: "Sotheby's: A masterclass in Asian art",
-      url: "https://www.youtube.com/results?search_query=sothebys+masterclass+asian+art",
+      url: "https://www.youtube.com/results?search_query=sothebys+asian+art+masterclass",
       duration: "15 min",
       watch: "0:00 〜 10:00",
       why: "アート×アジア×英語。富裕層が話す話題。",
@@ -804,9 +808,9 @@ const DAILY_MEDIA = [
   // Day 4 (木曜) - 日本文化を英語で語る
   {
     podcast: {
-      title: "NHK World: Living in Japan",
-      url: "https://www3.nhk.or.jp/nhkworld/en/podcast/",
-      search: "https://www3.nhk.or.jp/nhkworld/en/podcast/",
+      title: "NHK World: Direct Talk",
+      url: "https://open.spotify.com/search/NHK%20World%20Direct%20Talk",
+      search: "https://open.spotify.com/search/NHK%20World%20Direct%20Talk",
       duration: "20 min",
       listen: "Pick any episode, full",
       why: "日本のものを英語で説明する語彙集。海外で日本を語る武器。",
@@ -814,7 +818,7 @@ const DAILY_MEDIA = [
     },
     video: {
       title: "Kengo Kuma on Japanese architecture (TED)",
-      url: "https://www.youtube.com/results?search_query=kengo+kuma+ted+talk",
+      url: "https://www.youtube.com/results?search_query=kengo+kuma+ted+architecture",
       duration: "18 min",
       watch: "0:00 〜 12:00",
       why: "日本人建築家の英語プレゼン。あなたの3分自己紹介の参考。",
@@ -825,16 +829,16 @@ const DAILY_MEDIA = [
   {
     podcast: {
       title: "BBC Business Daily",
-      url: "https://www.bbc.co.uk/programmes/p02nrss1",
-      search: "https://www.bbc.co.uk/programmes/p02nrss1",
+      url: "https://open.spotify.com/search/BBC%20Business%20Daily",
+      search: "https://open.spotify.com/search/BBC%20Business%20Daily",
       duration: "18 min",
       listen: "Pick today's episode, full",
       why: "毎日更新。最新ビジネスニュースの英語に触れる。商談前の話題作り。",
       catchPhrase: "Just listen — don't translate. Train passive listening."
     },
     video: {
-      title: "FT: Business interviews",
-      url: "https://www.youtube.com/c/FinancialTimes/videos",
+      title: "Financial Times: CEO interviews",
+      url: "https://www.youtube.com/results?search_query=financial+times+ceo+interview",
       duration: "10 min",
       watch: "Latest CEO interview, 0:00 〜 8:00",
       why: "Financial Timesの経営者インタビュー。あなたが読まれる側の言葉。",
@@ -845,15 +849,15 @@ const DAILY_MEDIA = [
   {
     podcast: {
       title: "TED Business",
-      url: "https://www.ted.com/podcasts/ted-business",
-      search: "https://open.spotify.com/show/TED-Business",
+      url: "https://open.spotify.com/search/TED%20Business",
+      search: "https://open.spotify.com/search/TED%20Business",
       duration: "12-15 min",
       listen: "Pick latest, full",
       why: "短いビジネス話の宝庫。ストーリーテリングの構成が学べる。",
       catchPhrase: "Steal: their opening hooks. Use them in your pitch."
     },
     video: {
-      title: "Steve Jobs Stanford Commencement Speech",
+      title: "Steve Jobs Stanford Commencement Speech (2005)",
       url: "https://www.youtube.com/watch?v=UF8uR6Z6KLc",
       duration: "15 min",
       watch: "全編（聞き慣れたら字幕なしで）",

@@ -12,7 +12,7 @@ const App = {
     });
     // Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=8').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=9').catch(() => {});
     }
     // 起動時にアチーブメントチェック
     setTimeout(() => this.checkAchievements(), 800);
@@ -142,7 +142,7 @@ const App = {
 
     const streak = Storage.updateStreak();
     document.getElementById('streakNum').textContent = streak;
-    document.getElementById('todayCount').textContent = `${Storage.todayDoneCount()}/11`;
+    document.getElementById('todayCount').textContent = `${Storage.todayDoneCount()}/${SCHEDULE.length}`;
     document.getElementById('heroStreak').textContent = `🔥 ${streak}`;
     const xp = Storage.getXP();
     document.getElementById('heroXp').textContent = `⭐ ${xp} XP`;
@@ -264,6 +264,10 @@ const App = {
       case 'dashboard': Modules.dashboard(); break;
       case 'story-mode': Modules.storyMode(); break;
       case 'listen': Modules.listen(); break;
+      case 'listen-am': Modules.listen('am'); break;
+      case 'listen-pm': Modules.listen('pm'); break;
+      case 'shadowing-am': Modules.shadowingHub('am'); break;
+      case 'shadowing-pm': Modules.shadowingHub('pm'); break;
       case 'roleplay': Modules.roleplay(); break;
       case 'diary': Modules.diary(); break;
       case 'emergency': Modules.emergency(); break;
