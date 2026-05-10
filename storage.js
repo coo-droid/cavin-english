@@ -24,6 +24,11 @@ const Storage = {
     const set = new Set(this.get(k, []));
     set.add(scheduleKey);
     this.set(k, Array.from(set));
+    // Coach Planの完了マーク連動
+    if (typeof Modules !== 'undefined' && Modules.markCoachLessonDone) {
+      Modules.markCoachLessonDone(scheduleKey);
+      if (window._coachActiveLesson === scheduleKey) window._coachActiveLesson = null;
+    }
   },
   isDone(scheduleKey) {
     return this.get('done_' + this.todayKey(), []).includes(scheduleKey);

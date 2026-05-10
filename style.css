@@ -1770,3 +1770,169 @@ textarea:focus, input:focus { outline: none; border-color: var(--info); }
   line-height: 1.4;
   margin-top: 2px;
 }
+
+/* =========================
+   v11: Live Talk + Coach
+   ========================= */
+
+/* Hold-to-Talk mic button */
+.live-mic-btn {
+  width: 100%;
+  font-size: 17px !important;
+  padding: 22px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.live-mic-btn.recording {
+  background: var(--danger) !important;
+  border-bottom-color: var(--danger-shadow) !important;
+  animation: micPulse 1.0s ease-in-out infinite;
+}
+@keyframes micPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 0 var(--danger-shadow); }
+  50% { transform: scale(1.02); box-shadow: 0 4px 18px rgba(255,75,75,0.65); }
+}
+.live-status {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-soft);
+  font-weight: 800;
+  margin: 8px 0;
+  min-height: 18px;
+  letter-spacing: 0.3px;
+}
+
+/* Coach message bubble (during Live Talk) */
+.chat-msg.chat-coach {
+  background: linear-gradient(135deg, #fff7e0, #ffeac0);
+  border: 2px solid var(--accent);
+  margin-right: auto;
+  color: var(--text);
+  font-weight: 800;
+}
+
+/* More tools button on home */
+.more-btn {
+  width: 100%;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-bottom-width: 4px;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 4px;
+  margin-bottom: 14px;
+  color: var(--text);
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.05s;
+}
+.more-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
+
+/* Coach Plan */
+.coach-headline {
+  background: var(--card);
+  border: 2px solid var(--primary);
+  border-bottom-width: 4px;
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.coach-phase {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+}
+.coach-headline-text {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+.coach-reasoning {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.coach-lessons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.coach-lesson {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-bottom-width: 3px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.coach-lesson:active { transform: translateY(1px); border-bottom-width: 2px; }
+.coach-lesson.coach-done {
+  background: linear-gradient(135deg, #ebffe0, #d4f0c0);
+  border-color: var(--success);
+  opacity: 0.85;
+}
+.coach-lesson-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  border: 2px solid var(--line);
+  font-weight: 900;
+  font-size: 13px;
+  color: var(--text-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.coach-lesson.coach-done .coach-lesson-num {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success-dark);
+}
+.coach-lesson-icon { font-size: 22px; flex-shrink: 0; }
+.coach-lesson-info { flex: 1; min-width: 0; }
+.coach-lesson-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--text);
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+.coach-lesson-why {
+  font-size: 11px;
+  color: var(--text-soft);
+  font-weight: 700;
+  line-height: 1.4;
+}
+.coach-lesson-meta { flex-shrink: 0; }
+.coach-lesson-min {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--accent-dark);
+  background: rgba(255, 184, 77, 0.2);
+  padding: 4px 8px;
+  border-radius: 8px;
+}

@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#fff8ee">
 <title>CAVIN English</title>
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23fff8ee'/%3E%3Ctext x='90' y='130' font-size='110' text-anchor='middle'%3E🌸%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 
@@ -57,11 +57,11 @@
 
   <div id="micWarning" style="display:none;"></div>
 
-  <button class="daily-flow-cta" onclick="App.openModule('daily-flow')">
-    <div class="dfc-icon">☀️</div>
+  <button class="daily-flow-cta" onclick="App.openModule('coach-plan')">
+    <div class="dfc-icon">🌟</div>
     <div class="dfc-text">
-      <div class="dfc-title">Start Today's Flow</div>
-      <div class="dfc-sub">6 steps · auto-guided · ~25 min</div>
+      <div class="dfc-title">Today's Coach Plan</div>
+      <div class="dfc-sub">AIがあなた専用に毎日カスタム提案</div>
     </div>
     <div class="dfc-arrow">▶</div>
   </button>
@@ -74,127 +74,35 @@
     <button class="story-btn" onclick="App.openModule('story-mode')">START</button>
   </div>
 
-  <div class="now-card">
-    <div class="now-time" id="nowTime">— : —</div>
-    <div class="now-title" id="nowTitle">Loading...</div>
-    <div class="now-desc" id="nowDesc"></div>
-    <button class="start-btn" id="nowBtn">START</button>
-  </div>
-
-  <div class="section-title">TODAY'S SCHEDULE</div>
-  <div class="schedule-list" id="scheduleList"></div>
-
-  <div class="section-title">PRACTICE</div>
+  <!-- 4つの中核機能のみホームに -->
+  <div class="section-title">CORE PRACTICE</div>
   <div class="menu-grid">
-    <button class="menu-item tile-pink" onclick="App.openModule('shadowing-hub')">
-      <div class="menu-icon">🎬</div>
-      <div class="menu-name">Shadowing</div>
-      <div class="menu-desc">50× / 20× drill</div>
-    </button>
-    <button class="menu-item tile-blue" onclick="App.openModule('vocab-list')">
-      <div class="menu-icon">📚</div>
-      <div class="menu-name">Vocabulary</div>
-      <div class="menu-desc">Forgetting curve</div>
-    </button>
-    <button class="menu-item tile-green" onclick="App.openModule('scenes')">
-      <div class="menu-icon">🎭</div>
-      <div class="menu-name">Scenes</div>
-      <div class="menu-desc">Meeting / Meal</div>
-    </button>
-    <button class="menu-item tile-purple" onclick="App.openModule('live-talk')">
+    <button class="menu-item tile-pink" onclick="App.openModule('live-talk')">
       <div class="menu-icon">🎙️</div>
       <div class="menu-name">Live Talk</div>
-      <div class="menu-desc">GPT-4o real talk</div>
+      <div class="menu-desc">Voice conversation</div>
     </button>
-    <button class="menu-item tile-yellow" onclick="App.openModule('dashboard')">
-      <div class="menu-icon">📊</div>
-      <div class="menu-name">Progress</div>
-      <div class="menu-desc">XP & streaks</div>
-    </button>
-    <button class="menu-item tile-orange" onclick="App.openModule('flash-random')">
-      <div class="menu-icon">🃏</div>
-      <div class="menu-name">Random Flash</div>
-      <div class="menu-desc">28-card drill</div>
-    </button>
-    <button class="menu-item tile-pink" onclick="App.openModule('composition')">
+    <button class="menu-item tile-purple" onclick="App.openModule('composition')">
       <div class="menu-icon">✍️</div>
       <div class="menu-name">Composition</div>
       <div class="menu-desc">Write & improve</div>
     </button>
-  </div>
-
-  <div class="section-title">JAKARTA PREP</div>
-  <div class="menu-grid">
-    <button class="menu-item tile-pink" onclick="App.openModule('timeline')">
-      <div class="menu-icon">📅</div>
-      <div class="menu-name">Day Timeline</div>
-      <div class="menu-desc">Hour-by-hour plan</div>
+    <button class="menu-item tile-blue" onclick="App.openModule('shadowing-hub')">
+      <div class="menu-icon">🎬</div>
+      <div class="menu-name">Shadowing</div>
+      <div class="menu-desc">Mouth memory</div>
     </button>
-    <button class="menu-item tile-yellow" onclick="App.openModule('weekly-report')">
-      <div class="menu-icon">📈</div>
-      <div class="menu-name">Weekly Report</div>
-      <div class="menu-desc">Your progress</div>
-    </button>
-    <button class="menu-item tile-blue" onclick="App.openModule('chatgpt-api')">
-      <div class="menu-icon">🤖</div>
-      <div class="menu-name">AI Tutor</div>
-      <div class="menu-desc">In-app chat</div>
-    </button>
-    <button class="menu-item tile-green" onclick="App.openModule('vocab-add')">
-      <div class="menu-icon">➕</div>
-      <div class="menu-name">Add Card</div>
-      <div class="menu-desc">Custom flash</div>
-    </button>
-    <button class="menu-item tile-purple" onclick="App.openModule('report-settings')">
-      <div class="menu-icon">📧</div>
-      <div class="menu-name">Auto Report</div>
-      <div class="menu-desc">Email / Slack</div>
+    <button class="menu-item tile-green" onclick="App.openModule('vocab-list')">
+      <div class="menu-icon">📚</div>
+      <div class="menu-name">Vocabulary</div>
+      <div class="menu-desc">Forgetting curve</div>
     </button>
   </div>
 
-  <div class="section-title">QUICK ACCESS</div>
-  <div class="menu-grid">
-    <button class="menu-item tile-pink" onclick="App.openModule('declaration')">
-      <div class="menu-icon">🪞</div>
-      <div class="menu-name">Declaration</div>
-      <div class="menu-desc">Identity reset</div>
-    </button>
-    <button class="menu-item tile-pink" onclick="App.openModule('hook')">
-      <div class="menu-icon">🌸</div>
-      <div class="menu-name">Hook</div>
-      <div class="menu-desc">Self intro</div>
-    </button>
-    <button class="menu-item tile-blue" onclick="App.openModule('phrase-today')">
-      <div class="menu-icon">📝</div>
-      <div class="menu-name">Today's Phrase</div>
-      <div class="menu-desc">Daily one-liner</div>
-    </button>
-    <button class="menu-item tile-green" onclick="App.openModule('listen')">
-      <div class="menu-icon">🎧</div>
-      <div class="menu-name">Today's Media</div>
-      <div class="menu-desc">Auto-picked for you</div>
-    </button>
-    <button class="menu-item tile-purple" onclick="App.openModule('roleplay')">
-      <div class="menu-icon">💼</div>
-      <div class="menu-name">ChatGPT</div>
-      <div class="menu-desc">Weekend talk</div>
-    </button>
-    <button class="menu-item tile-yellow" onclick="App.openModule('diary')">
-      <div class="menu-icon">📔</div>
-      <div class="menu-name">Diary</div>
-      <div class="menu-desc">3-line reflection</div>
-    </button>
-    <button class="menu-item tile-orange" onclick="App.openModule('emergency')">
-      <div class="menu-icon">🚨</div>
-      <div class="menu-name">2-Min Mode</div>
-      <div class="menu-desc">When too busy</div>
-    </button>
-    <button class="menu-item tile-blue" onclick="App.openModule('history')">
-      <div class="menu-icon">📓</div>
-      <div class="menu-name">History</div>
-      <div class="menu-desc">Past diaries</div>
-    </button>
-  </div>
+  <button class="more-btn" onclick="App.openModule('more-menu')">
+    <span>⋯ MORE TOOLS</span>
+    <span style="font-size: 11px; opacity: 0.7; font-weight: 700;">All other features</span>
+  </button>
 
   <div class="footer-hint">
     Add to Home Screen for app experience<br>
@@ -209,12 +117,12 @@
   </div>
 </div>
 
-<script src="data.js?v=10"></script>
-<script src="storage.js?v=10"></script>
-<script src="speech.js?v=10"></script>
-<script src="vocab.js?v=10"></script>
-<script src="shadowing.js?v=10"></script>
-<script src="modules.js?v=10"></script>
-<script src="app.js?v=10"></script>
+<script src="data.js?v=11"></script>
+<script src="storage.js?v=11"></script>
+<script src="speech.js?v=11"></script>
+<script src="vocab.js?v=11"></script>
+<script src="shadowing.js?v=11"></script>
+<script src="modules.js?v=11"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>

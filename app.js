@@ -12,7 +12,7 @@ const App = {
     });
     // Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=10').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=11').catch(() => {});
     }
     // 起動時にアチーブメントチェック
     setTimeout(() => this.checkAchievements(), 800);
@@ -184,33 +184,36 @@ const App = {
       document.getElementById('storyBanner').style.display = 'none';
     }
 
-    // 「次にやるべき」
+    // 「次にやるべき」と「スケジュール」はホームから外したので、要素があれば更新するだけ（安全に）
     const cur = d.getHours() * 60 + d.getMinutes();
     let displayItem = SCHEDULE.find(s => s.mins >= cur && !Storage.isDone(s.key));
     if (!displayItem) displayItem = SCHEDULE.find(s => !Storage.isDone(s.key)) || SCHEDULE[0];
 
-    document.getElementById('nowTime').textContent = `${displayItem.time}  ·  ${displayItem.icon}  ${Storage.isDone(displayItem.key) ? 'COMPLETED' : 'NEXT UP'}`;
-    document.getElementById('nowTitle').textContent = displayItem.name;
-    document.getElementById('nowDesc').textContent = displayItem.desc;
-    document.getElementById('nowBtn').onclick = () => this.openModule(displayItem.key);
-
-    // スケジュール
+    const nowTime = document.getElementById('nowTime');
+    if (nowTime) {
+      nowTime.textContent = `${displayItem.time}  ·  ${displayItem.icon}  ${Storage.isDone(displayItem.key) ? 'COMPLETED' : 'NEXT UP'}`;
+      const nt = document.getElementById('nowTitle'); if (nt) nt.textContent = displayItem.name;
+      const nd = document.getElementById('nowDesc'); if (nd) nd.textContent = displayItem.desc;
+      const nb = document.getElementById('nowBtn'); if (nb) nb.onclick = () => this.openModule(displayItem.key);
+    }
     const list = document.getElementById('scheduleList');
-    list.innerHTML = '';
-    SCHEDULE.forEach(s => {
-      const div = document.createElement('div');
-      div.className = 'schedule-item';
-      if (s.mins < cur && !Storage.isDone(s.key)) div.classList.add('past');
-      if (Storage.isDone(s.key)) div.style.opacity = '0.55';
-      if (Math.abs(s.mins - cur) < 30 && !Storage.isDone(s.key)) div.classList.add('now-active');
-      div.innerHTML = `
-        <span class="sch-time">${s.time}</span>
-        <span class="sch-name">${s.icon} ${s.name}</span>
-        <span class="sch-arrow">${Storage.isDone(s.key) ? '✓' : '›'}</span>
-      `;
-      div.onclick = () => this.openModule(s.key);
-      list.appendChild(div);
-    });
+    if (list) {
+      list.innerHTML = '';
+      SCHEDULE.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'schedule-item';
+        if (s.mins < cur && !Storage.isDone(s.key)) div.classList.add('past');
+        if (Storage.isDone(s.key)) div.style.opacity = '0.55';
+        if (Math.abs(s.mins - cur) < 30 && !Storage.isDone(s.key)) div.classList.add('now-active');
+        div.innerHTML = `
+          <span class="sch-time">${s.time}</span>
+          <span class="sch-name">${s.icon} ${s.name}</span>
+          <span class="sch-arrow">${Storage.isDone(s.key) ? '✓' : '›'}</span>
+        `;
+        div.onclick = () => this.openModule(s.key);
+        list.appendChild(div);
+      });
+    }
   },
 
   openModal(html) {
@@ -279,6 +282,8 @@ const App = {
       case 'live-talk': Modules.liveTalk(); break;
       case 'report-settings': Modules.reportSettings(); break;
       case 'composition': Modules.composition(); break;
+      case 'coach-plan': Modules.coachPlan(); break;
+      case 'more-menu': Modules.moreMenu(); break;
       default:
         document.getElementById('modalBody').innerHTML = `<div class="modal-title">COMING SOON</div><button class="btn-primary" onclick="App.closeModal()">CLOSE</button>`;
     }

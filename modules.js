@@ -1044,6 +1044,341 @@ const Modules = {
   },
 
   // ===========================================
+  // ⋯ More Tools — 全機能を整理して表示
+  // ===========================================
+  moreMenu() {
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">⋯ ALL TOOLS</div>
+
+      <div class="section-title" style="margin: 6px 0 8px;">RHYTHM RITUALS</div>
+      <div class="menu-grid">
+        <button class="menu-item tile-pink" onclick="App.openModule('declaration')">
+          <div class="menu-icon">🪞</div><div class="menu-name">Declaration</div>
+          <div class="menu-desc">Identity reset</div>
+        </button>
+        <button class="menu-item tile-pink" onclick="App.openModule('hook')">
+          <div class="menu-icon">🌸</div><div class="menu-name">Hook</div>
+          <div class="menu-desc">Self intro</div>
+        </button>
+        <button class="menu-item tile-blue" onclick="App.openModule('phrase-today')">
+          <div class="menu-icon">📝</div><div class="menu-name">Today's Phrase</div>
+          <div class="menu-desc">Daily one-liner</div>
+        </button>
+        <button class="menu-item tile-yellow" onclick="App.openModule('diary')">
+          <div class="menu-icon">📔</div><div class="menu-name">Diary</div>
+          <div class="menu-desc">3-line reflection</div>
+        </button>
+        <button class="menu-item tile-orange" onclick="App.openModule('emergency')">
+          <div class="menu-icon">🚨</div><div class="menu-name">2-Min Mode</div>
+          <div class="menu-desc">When too busy</div>
+        </button>
+      </div>
+
+      <div class="section-title" style="margin: 16px 0 8px;">DRILLS</div>
+      <div class="menu-grid">
+        <button class="menu-item tile-orange" onclick="App.openModule('flash-random')">
+          <div class="menu-icon">🃏</div><div class="menu-name">Random Flash</div>
+          <div class="menu-desc">28-card drill</div>
+        </button>
+        <button class="menu-item tile-green" onclick="App.openModule('scenes')">
+          <div class="menu-icon">🎭</div><div class="menu-name">Scenes</div>
+          <div class="menu-desc">Meeting / Meal</div>
+        </button>
+        <button class="menu-item tile-green" onclick="App.openModule('listen')">
+          <div class="menu-icon">🎧</div><div class="menu-name">Today's Media</div>
+          <div class="menu-desc">Auto-picked</div>
+        </button>
+        <button class="menu-item tile-pink" onclick="App.openModule('vocab-add')">
+          <div class="menu-icon">➕</div><div class="menu-name">Add Card</div>
+          <div class="menu-desc">Custom flash</div>
+        </button>
+      </div>
+
+      <div class="section-title" style="margin: 16px 0 8px;">JAKARTA PREP</div>
+      <div class="menu-grid">
+        <button class="menu-item tile-pink" onclick="App.openModule('timeline')">
+          <div class="menu-icon">📅</div><div class="menu-name">Day Timeline</div>
+          <div class="menu-desc">Hour-by-hour plan</div>
+        </button>
+        <button class="menu-item tile-purple" onclick="App.openModule('roleplay')">
+          <div class="menu-icon">💼</div><div class="menu-name">ChatGPT Roleplay</div>
+          <div class="menu-desc">Weekend deep talk</div>
+        </button>
+        <button class="menu-item tile-orange" onclick="App.openModule('daily-flow')">
+          <div class="menu-icon">☀️</div><div class="menu-name">Daily Flow</div>
+          <div class="menu-desc">6-step ritual</div>
+        </button>
+      </div>
+
+      <div class="section-title" style="margin: 16px 0 8px;">PROGRESS &amp; SETTINGS</div>
+      <div class="menu-grid">
+        <button class="menu-item tile-yellow" onclick="App.openModule('dashboard')">
+          <div class="menu-icon">📊</div><div class="menu-name">Dashboard</div>
+          <div class="menu-desc">XP &amp; heatmap</div>
+        </button>
+        <button class="menu-item tile-yellow" onclick="App.openModule('weekly-report')">
+          <div class="menu-icon">📈</div><div class="menu-name">Weekly Report</div>
+          <div class="menu-desc">Last 7 days</div>
+        </button>
+        <button class="menu-item tile-blue" onclick="App.openModule('chatgpt-api')">
+          <div class="menu-icon">🤖</div><div class="menu-name">AI Tutor</div>
+          <div class="menu-desc">Chat / Settings</div>
+        </button>
+        <button class="menu-item tile-purple" onclick="App.openModule('report-settings')">
+          <div class="menu-icon">📧</div><div class="menu-name">Auto Report</div>
+          <div class="menu-desc">Email / Slack</div>
+        </button>
+        <button class="menu-item tile-blue" onclick="App.openModule('history')">
+          <div class="menu-icon">📓</div><div class="menu-name">Diary History</div>
+          <div class="menu-desc">Past entries</div>
+        </button>
+      </div>
+
+      <button class="btn-secondary" style="margin-top: 16px;" onclick="App.closeModal()">CLOSE</button>
+    `;
+  },
+
+  // ===========================================
+  // 🌟 Today's Coach Plan
+  // AIがあなたの過去進捗・残り日数・苦手領域から、今日やるべきレッスンを毎日カスタム提案
+  // ===========================================
+  coachPlan() {
+    const today = Storage.todayKey();
+    const cached = Storage.get('coach_plan_' + today, null);
+    if (cached) {
+      this.renderCoachPlan(cached);
+      return;
+    }
+    if (!Storage.hasApiKey()) {
+      // API無しでもデフォルトのプランを返す
+      const def = this.defaultCoachPlan();
+      Storage.set('coach_plan_' + today, def);
+      this.renderCoachPlan(def);
+      return;
+    }
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">🌟 TODAY'S COACH PLAN</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">あなたの進捗・苦手・残り日数を分析し、「今日この一日で最も英語力を上げるための4-6個のレッスン」を提案。毎日違う組み合わせ。</div>
+        <div class="why-impact">→ 7/23に最高の状態で立つための最短ルート</div>
+      </div>
+      <div style="text-align:center; padding: 30px 10px;">
+        <div style="font-size: 40px; margin-bottom: 10px;">🤖</div>
+        <div style="color: var(--info); font-weight: 900; font-size: 14px;">AI is crafting your plan...</div>
+        <div style="color: var(--text-soft); font-size: 12px; margin-top: 8px; font-weight: 700;">Analyzing your progress, weaknesses, and remaining days...</div>
+      </div>
+    `;
+    this.generateCoachPlan().then(plan => {
+      Storage.set('coach_plan_' + today, plan);
+      this.renderCoachPlan(plan);
+    }).catch(e => {
+      console.error(e);
+      const def = this.defaultCoachPlan();
+      Storage.set('coach_plan_' + today, def);
+      this.renderCoachPlan(def);
+    });
+  },
+
+  defaultCoachPlan() {
+    const days = Storage.daysUntil(TARGET_DATE);
+    const phase = days > 60 ? 'foundation' : days > 30 ? 'building' : days > 14 ? 'sharpening' : days > 3 ? 'final' : 'showtime';
+    return {
+      headline: 'Today\'s mission: build mouth memory',
+      reasoning: `残り${days}日。今は ${phase === 'foundation' ? '土台作り' : phase === 'building' ? '実力構築' : phase === 'sharpening' ? '研磨' : phase === 'final' ? '最終調整' : '本番モード'} のフェーズ。基礎ステップを積み重ねる日。`,
+      phase,
+      lessons: [
+        { id: 'shadowing-am', icon: '🎬', title: 'Shadowing Session', why: '口の筋肉に英語を染み込ませる。最重要レッスン。', minutes: 12 },
+        { id: 'composition', icon: '✍️', title: 'Composition + AI Feedback', why: '自分の言葉で書く→添削で語彙と文法を磨く', minutes: 8 },
+        { id: 'live-talk', icon: '🎙️', title: 'Live Talk (Meeting scenario)', why: '会話の瞬発力。商談本番のリハーサル。', minutes: 10 },
+        { id: 'flash-am', icon: '🃏', title: 'Q&A Flash', why: '想定質問への即答力', minutes: 3 },
+        { id: 'listen-am', icon: '🎧', title: 'Daily Media', why: '耳の温度を保つ', minutes: 10 }
+      ]
+    };
+  },
+
+  async generateCoachPlan() {
+    const days = Storage.daysUntil(TARGET_DATE);
+    // 過去7日の活動量を集計
+    const dates = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      dates.push(`${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`);
+    }
+    const stats = {
+      shadow_rep: dates.reduce((s, d) => s + Storage.getEvent('shadow_rep', d), 0),
+      flash_done: dates.reduce((s, d) => s + Storage.getEvent('flash_done', d), 0),
+      vocab_review: dates.reduce((s, d) => s + Storage.getEvent('vocab_review', d), 0),
+      pronunciation_check: dates.reduce((s, d) => s + Storage.getEvent('pronunciation_check', d), 0),
+      live_talk_turn: dates.reduce((s, d) => s + Storage.getEvent('live_talk_turn', d), 0),
+      composition_attempt: dates.reduce((s, d) => s + Storage.getEvent('composition_attempt', d), 0)
+    };
+    const xp = Storage.getXP();
+    const streak = parseInt(localStorage.getItem('streak') || '0');
+
+    const sys = `You are an elite English coach for Zacky, a Japanese businessman (TOEIC 800+) preparing for a luxury flower sales trip to Indonesia on July 23, 2026. He needs to interact with HNWI Indonesian clients in sophisticated business English.
+
+Your job: based on his last-7-days stats and remaining days, design TODAY'S optimal lesson plan (4-6 lessons) to maximize his English skill gain by July 23.
+
+Available lesson IDs (use these exact IDs):
+- shadowing-am, shadowing-pm: shadowing drill (mouth memory)
+- composition: write English & get AI feedback
+- live-talk: live voice conversation with AI
+- flash-am, flash-noon, flash-pm, flash-night: Q&A flash cards
+- vocab-list: vocabulary review (forgetting curve)
+- listen-am, listen-pm: today's curated podcast/video
+- scenes: scene-specific phrases
+- timeline: day-of-meeting walkthrough
+- declaration, hook, phrase-today, diary, emergency: short rituals
+
+Rules:
+- Pick 4-6 lessons. Order them logically.
+- Heavily prioritize ACTIVE OUTPUT (composition, live-talk, shadowing) over passive (listen).
+- If he's been weak in one area (low stats), include it. If strong, skip or reduce.
+- Last 7 days < 30 days: focus on foundation (lots of shadow, vocab).
+- Last 30-60 days: balanced.
+- Last < 14 days: scenario rehearsal (live-talk, scenes, timeline) heavily.
+- Output STRICT JSON only, no markdown:
+{
+  "headline": "Today's mission in 1 punchy English line",
+  "reasoning": "1-2 sentences in Japanese explaining why this exact mix today",
+  "phase": "foundation|building|sharpening|final|showtime",
+  "lessons": [
+    {"id": "lesson-id", "icon": "emoji", "title": "Lesson name", "why": "1 sentence in Japanese why HE specifically needs this today", "minutes": 8}
+  ]
+}`;
+
+    const user = `Status:
+- Days to Jakarta: ${days}
+- Total XP: ${xp}
+- Streak: ${streak} days
+- Last 7 days activity:
+  - Shadowing reps: ${stats.shadow_rep}
+  - Flash cards done: ${stats.flash_done}
+  - Vocab reviews: ${stats.vocab_review}
+  - Pronunciation checks: ${stats.pronunciation_check}
+  - Live talk turns: ${stats.live_talk_turn}
+  - Composition attempts: ${stats.composition_attempt}
+- Vocabulary items: ${typeof Vocab !== 'undefined' ? Vocab.all().length : 0}
+- Vocab due now: ${typeof Vocab !== 'undefined' ? Vocab.due().length : 0}
+
+Design today's plan.`;
+
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: _chatModel(),
+        messages: [
+          { role: 'system', content: sys },
+          { role: 'user', content: user }
+        ],
+        temperature: 0.7,
+        response_format: { type: 'json_object' },
+        max_tokens: 1200
+      })
+    });
+    if (!r.ok) throw new Error('API: ' + r.status);
+    const data = await r.json();
+    return JSON.parse(data.choices[0].message.content);
+  },
+
+  renderCoachPlan(plan) {
+    const today = Storage.todayKey();
+    const completedLessons = Storage.get('coach_done_' + today, []);
+    const totalMin = (plan.lessons || []).reduce((s, l) => s + (l.minutes || 0), 0);
+    const doneCount = (plan.lessons || []).filter(l => completedLessons.includes(l.id)).length;
+    const phaseColors = {
+      foundation: '#58cc02', building: '#1cb0f6', sharpening: '#ffb84d',
+      final: '#ff6f91', showtime: '#ce82ff'
+    };
+    const phaseColor = phaseColors[plan.phase] || '#ff6f91';
+
+    const lessonsHtml = (plan.lessons || []).map((l, i) => {
+      const done = completedLessons.includes(l.id);
+      return `
+        <div class="coach-lesson ${done ? 'coach-done' : ''}" onclick="Modules.coachLessonStart('${l.id}')">
+          <div class="coach-lesson-num">${done ? '✓' : (i+1)}</div>
+          <div class="coach-lesson-icon">${l.icon || '📚'}</div>
+          <div class="coach-lesson-info">
+            <div class="coach-lesson-title">${l.title || ''}</div>
+            <div class="coach-lesson-why">${l.why || ''}</div>
+          </div>
+          <div class="coach-lesson-meta">
+            <div class="coach-lesson-min">~${l.minutes || 5}m</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">🌟 TODAY'S COACH PLAN</div>
+      <div class="coach-headline" style="border-color: ${phaseColor};">
+        <div class="coach-phase" style="color: ${phaseColor};">${(plan.phase || 'building').toUpperCase()} PHASE · ${doneCount}/${(plan.lessons || []).length} done · ~${totalMin} min</div>
+        <div class="coach-headline-text">${plan.headline || ''}</div>
+        <div class="coach-reasoning">${plan.reasoning || ''}</div>
+      </div>
+      <div class="coach-lessons">
+        ${lessonsHtml}
+      </div>
+      <button class="btn-primary btn-pink" onclick="Modules.coachStartFirst()">${doneCount === 0 ? "🚀 START FIRST LESSON" : doneCount === (plan.lessons || []).length ? '🌸 ALL DONE — REWARDS!' : '▶ CONTINUE NEXT LESSON'}</button>
+      <button class="btn-secondary" onclick="Modules.coachRegenerate()">🔄 REGENERATE PLAN</button>
+      <div style="font-size: 11px; color: var(--text-soft); text-align: center; font-weight: 700; margin-top: 6px;">
+        AIが毎日あなたの状態を見て新しく作る · Tap each lesson to start
+      </div>
+    `;
+  },
+
+  coachStartFirst() {
+    const today = Storage.todayKey();
+    const plan = Storage.get('coach_plan_' + today, null);
+    if (!plan || !plan.lessons || plan.lessons.length === 0) return;
+    const done = Storage.get('coach_done_' + today, []);
+    const next = plan.lessons.find(l => !done.includes(l.id));
+    if (!next) {
+      // 全完了！祝祭
+      App.confetti(80);
+      Storage.addXP(50);
+      document.getElementById('modalBody').innerHTML = `
+        <div class="modal-title">🌟 PLAN COMPLETE</div>
+        <div class="burst-card">
+          <div class="burst-emoji">🌸</div>
+          <div class="burst-title">All lessons done!</div>
+          <div class="burst-msg">Today's Zacky moved one step closer to Jakarta.</div>
+          <div style="margin-top: 12px;"><span class="xp-badge" style="font-size: 14px; padding: 6px 16px;">+50 XP bonus</span></div>
+        </div>
+        <button class="btn-primary btn-success" onclick="App.closeModal()">CLOSE 🔥</button>
+      `;
+      return;
+    }
+    this.coachLessonStart(next.id);
+  },
+
+  coachLessonStart(id) {
+    // 完了マーク用にidを記録（モジュール側で完了したらmarkDoneも呼ばれる）
+    window._coachActiveLesson = id;
+    App.openModule(id);
+  },
+
+  // モジュール完了時にコーチプランの完了マークを付ける
+  markCoachLessonDone(id) {
+    if (!id) return;
+    const today = Storage.todayKey();
+    const done = Storage.get('coach_done_' + today, []);
+    if (!done.includes(id)) {
+      done.push(id);
+      Storage.set('coach_done_' + today, done);
+    }
+  },
+
+  coachRegenerate() {
+    const today = Storage.todayKey();
+    Storage.remove('coach_plan_' + today);
+    Storage.set('coach_done_' + today, []);
+    this.coachPlan();
+  },
+
+  // ===========================================
   // ✍️ Composition Trainer
   // お題 → 自分で英作文 → AI添削 → 書き直し
   // ===========================================
@@ -1338,6 +1673,14 @@ Analyze and return JSON.`;
         <button class="example-speak" style="margin-top: 8px;" onclick="Speech.speak(\`${sampleEsc}\`, 0.9)">🔊 LISTEN</button>
       </div>
 
+      <div class="section-title" style="margin: 16px 0 8px;">💬 ASK THE AI</div>
+      <div style="background: var(--bg-soft); border: 2px dashed var(--purple); border-radius: 12px; padding: 12px; margin-bottom: 10px;">
+        <div style="font-size: 12px; color: var(--text-soft); font-weight: 800; margin-bottom: 8px;">この添削について深掘りしたい？「なぜこの語が良い？」「他の言い方は？」など自由に質問</div>
+        <input type="text" id="compFollowupInput" placeholder="例: なぜ 'priced' のほうが 'expensive' より上品？" onkeydown="if(event.key==='Enter')Modules.compositionAskFollowup()">
+        <button class="btn-secondary" onclick="Modules.compositionAskFollowup()">📨 ASK</button>
+      </div>
+      <div id="compFollowupArea"></div>
+
       <div style="margin-top: 16px;">
         <button class="btn-primary btn-pink" onclick="Modules.compositionRetry()">🔄 RETRY — WRITE BETTER VERSION</button>
         <button class="btn-primary btn-success" onclick="Modules.compositionFinish()">✓ FINISH (GOT IT)</button>
@@ -1348,6 +1691,55 @@ Analyze and return JSON.`;
       const el = document.getElementById('compFeedback');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
+  },
+
+  // 添削への質問 — AIが対話的に答える
+  async compositionAskFollowup() {
+    const q = document.getElementById('compFollowupInput').value.trim();
+    if (!q) { App.toast('質問を入力'); return; }
+    const s = this.compositionState;
+    if (!s || s.attempts.length === 0) return;
+    const last = s.attempts[s.attempts.length - 1];
+    const area = document.getElementById('compFollowupArea');
+    document.getElementById('compFollowupInput').value = '';
+
+    const qEl = document.createElement('div');
+    qEl.className = 'chat-msg chat-user pop-in';
+    qEl.style.maxWidth = '90%';
+    qEl.textContent = q;
+    area.appendChild(qEl);
+
+    const aEl = document.createElement('div');
+    aEl.className = 'chat-msg chat-coach pop-in';
+    aEl.style.maxWidth = '90%';
+    aEl.textContent = '...';
+    area.appendChild(aEl);
+
+    if (!Storage.hasApiKey()) {
+      aEl.textContent = 'AI質問にはAPIキーが必要です';
+      return;
+    }
+    try {
+      const sysPrompt = `You are an English writing coach. The user wrote: "${last.userText}". You gave feedback: ${JSON.stringify(last.feedback)}. Answer the user's follow-up question in Japanese, concisely (2-4 sentences). If asked for alternatives, give 2-3 actual examples.`;
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: _chatModel(),
+          messages: [
+            { role: 'system', content: sysPrompt },
+            { role: 'user', content: q }
+          ],
+          temperature: 0.5,
+          max_tokens: 400
+        })
+      });
+      const data = await r.json();
+      aEl.innerHTML = data.choices[0].message.content.replace(/\n/g, '<br>');
+      Storage.addXP(2);
+    } catch (e) {
+      aEl.textContent = 'Error: ' + e.message;
+    }
   },
 
   compositionRetry() {
@@ -1873,81 +2265,205 @@ Analyze and return JSON.`;
   // ===========================================
   liveTalkState: null,
 
-  liveTalk() {
+  // ===========================================
+  // 🎙️ LIVE TALK v2 — 滑らか・ホールド型・自動応答・ストリーミング
+  // ===========================================
+  liveTalk(scenario) {
     if (!Storage.hasApiKey()) {
       document.getElementById('modalBody').innerHTML = `
         <div class="modal-title">LIVE VOICE TALK</div>
         <div class="why-card">
           <div class="why-label">🎯 WHY LIVE TALK</div>
-          <div class="why-text">本物の会話練習。AIが音声で応答してくる。録音→文字起こし→応答→音声再生をループ。商談本番に最も近い体験。</div>
-          <div class="why-impact">→ 想定外の質問への臨機応変力</div>
+          <div class="why-text">本物の会話練習。マイクを押して話す→AIが自然な英語で返す。商談本番のリハーサル。</div>
+          <div class="why-impact">→ 商談で詰まらない瞬発力</div>
         </div>
         <div class="api-card">
           <div class="api-status">⚙️ OPENAI API KEY REQUIRED</div>
           <div style="font-size: 12px; color: var(--text); font-weight: 700; line-height: 1.5; margin-bottom: 10px;">
-            この機能はWhisper（音声認識）+ GPT-4o（応答）+ TTSを使います。<br>
-            APIキーをAI Tutor画面で先に設定してください。
+            音声認識+応答+音声合成のフルスタックをOpenAIで動かします。
           </div>
           <button class="btn-primary btn-success" onclick="App.openModule('chatgpt-api')">⚙️ SET API KEY</button>
         </div>
       `;
       return;
     }
+    if (scenario) {
+      const prompts = this.liveTalkPrompts();
+      Storage.set('live_chat_history', [{ role: 'system', content: prompts[scenario] }]);
+    }
     const hist = Storage.get('live_chat_history', []);
-    const chatHtml = hist.length === 0
-      ? `<div class="chat-msg chat-ai">👋 Hi Zacky. I'm here to talk. Tap the mic and speak. I'll respond in voice.</div>`
-      : hist.map(m => `<div class="chat-msg chat-${m.role === 'user' ? 'user' : 'ai'}">${m.content}</div>`).join('');
+    const filteredHist = hist.filter(m => m.role !== 'system');
+    const chatHtml = filteredHist.length === 0
+      ? `<div class="chat-msg chat-ai">👋 Hi Zacky. Pick a scenario or just hold the mic to start speaking.</div>`
+      : filteredHist.map(m => `<div class="chat-msg chat-${m.role === 'user' ? 'user' : m.role === 'coach' ? 'coach' : 'ai'}">${m.content}</div>`).join('');
+    const hasScenario = !!hist.find(m => m.role === 'system');
+
     document.getElementById('modalBody').innerHTML = `
-      <div class="modal-title">🎙️ LIVE VOICE TALK · GPT-4o</div>
+      <div class="modal-title">🎙️ LIVE VOICE TALK</div>
+      ${!hasScenario ? `
       <div class="why-card">
         <div class="why-label">🎯 WHY LIVE TALK</div>
-        <div class="why-text">本物の会話練習。録音→AI文字起こし→AI応答→音声再生がループ。商談本番に最も近い。</div>
-        <div class="why-impact">→ 想定外質問への対応力</div>
+        <div class="why-text">押して話す→自動で文字起こし→AIが滑らかに応答→音声で返ってくる。会話の流れを止めない設計。</div>
+        <div class="why-impact">→ 商談本番のリハーサル</div>
+      </div>
+      <div class="label">PICK A SCENARIO</div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="Modules.liveTalk('meeting')">🤝 MEETING</button>
+        <button class="btn-primary btn-pink" onclick="Modules.liveTalk('smalltalk')">💬 SMALL TALK</button>
       </div>
       <div class="btn-row">
-        <button class="btn-secondary" onclick="Modules.liveTalkScenario('meeting')">🤝 MEETING</button>
-        <button class="btn-secondary" onclick="Modules.liveTalkScenario('smalltalk')">💬 SMALL TALK</button>
+        <button class="btn-secondary" onclick="Modules.liveTalk('negotiation')">💸 NEGOTIATION</button>
+        <button class="btn-secondary" onclick="Modules.liveTalk('coach')">🎓 ENGLISH COACH</button>
       </div>
-      <div class="chat-area" id="liveChatArea">${chatHtml}</div>
-      <div id="liveStatus" style="text-align:center; font-size: 12px; color: var(--text-soft); font-weight: 800; margin: 8px 0; min-height: 18px;"></div>
-      <button class="btn-primary btn-pink" id="liveTalkBtn" style="font-size: 16px; padding: 18px;">🎙️ TAP & HOLD TO SPEAK</button>
-      <button class="btn-secondary" onclick="Storage.set('live_chat_history', []); Modules.liveTalk();">🗑 CLEAR CHAT</button>
+      ` : `
+      <div style="text-align: center; font-size: 11px; color: var(--text-soft); font-weight: 800; margin-bottom: 10px;">
+        Scenario active · <a href="javascript:Storage.set('live_chat_history',[]); Modules.liveTalk();" style="color: var(--danger);">Change</a>
+      </div>
+      `}
+      <div class="chat-area" id="liveChatArea" style="min-height: 200px; max-height: 45vh;">${chatHtml}</div>
+      <div id="liveStatus" class="live-status">Ready when you are 🎙️</div>
+      <button class="btn-primary btn-pink live-mic-btn" id="liveMicBtn">
+        <span id="liveMicIcon">🎙️</span>
+        <span id="liveMicText">HOLD TO TALK</span>
+      </button>
+      <div style="text-align: center; font-size: 11px; color: var(--text-soft); font-weight: 700; margin: 6px 0 10px;">
+        Press &amp; hold to record · Release to send · Or tap to toggle
+      </div>
+      ${hasScenario ? `
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="Modules.liveTalkAskCorrection()">📝 GIVE ME FEEDBACK</button>
+        <button class="btn-secondary" onclick="Modules.liveTalkResetKeepScenario()">🗑 RESET CHAT</button>
+      </div>
+      ` : `<button class="btn-secondary" onclick="Storage.set('live_chat_history', []); Modules.liveTalk();">🗑 CLEAR CHAT</button>`}
     `;
-    // タップ操作
-    const btn = document.getElementById('liveTalkBtn');
-    let recording = false;
-    btn.onclick = async () => {
-      if (recording) {
-        recording = false;
-        btn.textContent = '⏳ PROCESSING...';
-        btn.disabled = true;
-        await this.liveTalkProcess();
-        btn.disabled = false;
-        btn.textContent = '🎙️ TAP TO SPEAK';
-      } else {
-        Speech.cancel();
-        await new Promise(r => setTimeout(r, 200));
-        try {
-          await Speech.startRecording();
-          recording = true;
-          btn.textContent = '⏹ TAP TO STOP';
-          btn.classList.add('btn-danger');
-          document.getElementById('liveStatus').textContent = '🔴 Recording... speak now';
-        } catch (e) {
-          App.toast('Mic error: ' + e.message);
-        }
-      }
+
+    this.bindLiveTalkMic();
+
+    if (scenario && hist.length === 1) {
+      setTimeout(() => this.liveTalkAiInitiate(), 200);
+    }
+  },
+
+  liveTalkPrompts() {
+    return {
+      meeting: "You are Mr. Tan, a 55-year-old Chinese-Indonesian luxury hotel chain owner in Jakarta. Sophisticated, skeptical of new vendors, but genuinely curious about quality. Speak natural conversational English with thoughtful pacing (use commas/dashes, never robotic). Keep each turn 2-3 sentences. Ask one probing question at a time. The user is Zacky, a Japanese man selling premium flowers from CAVIN.",
+      smalltalk: "You are Ibu Sari, a warm 45-year-old Indonesian fashion entrepreneur and art collector. You're at a Jakarta carnival reception. Speak conversational English, be curious about Japan, ask follow-up questions. Each turn 2-3 sentences. The user is Zacky, a Japanese man you just met.",
+      negotiation: "You are Pak Budi, a sharp Indonesian event producer who pushes hard on price. You speak fast, direct, business-like English. You'll counter every claim. Keep replies tight — 1-2 sentences. Test the user's ability to defend value without dropping price.",
+      coach: "You are an elite English speaking coach for Zacky, a Japanese businessman preparing for a luxury sales trip to Indonesia (TOEIC 800+ level). Speak naturally and conversationally. After he speaks, briefly acknowledge what he said, then in 1 sentence give him ONE specific, actionable improvement (better word, more elegant phrasing, or rhythm). End with a follow-up question. Keep total reply under 3 sentences."
     };
   },
 
-  liveTalkScenario(type) {
-    const prompts = {
-      meeting: "You are Mr. Tan, a 50yo Chinese-Indonesian luxury hotel owner in Jakarta. I'm Zacky from CAVIN selling premium Japanese flowers. Be skeptical but curious. Ask one short business question per turn (1-2 sentences max), in English. Stay in character.",
-      smalltalk: "You are Ibu Sari, a 45yo Indonesian fashion entrepreneur. We just met at a Jakarta carnival. Make natural small talk in English. Keep each turn short (1-2 sentences). Stay in character."
-    };
-    Storage.set('live_chat_history', [{ role: 'system', content: prompts[type] }]);
+  liveTalkResetKeepScenario() {
+    const hist = Storage.get('live_chat_history', []);
+    const sys = hist.filter(m => m.role === 'system');
+    Storage.set('live_chat_history', sys);
     this.liveTalk();
-    setTimeout(() => this.liveTalkAiInitiate(), 200);
+    if (sys.length > 0) setTimeout(() => this.liveTalkAiInitiate(), 200);
+  },
+
+  // hold-to-talk + tap-to-toggle 両対応
+  bindLiveTalkMic() {
+    const btn = document.getElementById('liveMicBtn');
+    if (!btn) return;
+    let recording = false;
+    let pressedAt = 0;
+    let waitingTapStop = false;
+
+    const startRec = async () => {
+      if (recording) return;
+      Speech.cancel();
+      await new Promise(r => setTimeout(r, 150));
+      try {
+        await Speech.startRecording();
+        recording = true;
+        btn.classList.add('recording');
+        const ic = document.getElementById('liveMicIcon');
+        const tx = document.getElementById('liveMicText');
+        if (ic) ic.textContent = '🔴';
+        if (tx) tx.textContent = 'RELEASE TO SEND';
+        const st = document.getElementById('liveStatus');
+        if (st) st.textContent = '🔴 Listening...';
+      } catch (e) {
+        App.toast('Mic error: ' + (e.message || e));
+      }
+    };
+    const stopAndSend = async () => {
+      if (!recording) return;
+      recording = false;
+      btn.classList.remove('recording');
+      const ic = document.getElementById('liveMicIcon');
+      const tx = document.getElementById('liveMicText');
+      if (ic) ic.textContent = '⏳';
+      if (tx) tx.textContent = 'PROCESSING';
+      btn.disabled = true;
+      await this.liveTalkProcess();
+      btn.disabled = false;
+      const ic2 = document.getElementById('liveMicIcon');
+      const tx2 = document.getElementById('liveMicText');
+      if (ic2) ic2.textContent = '🎙️';
+      if (tx2) tx2.textContent = 'HOLD TO TALK';
+    };
+
+    const onDown = (e) => {
+      e.preventDefault();
+      if (waitingTapStop) {
+        // タップモードで2回目のタップ
+        waitingTapStop = false;
+        stopAndSend();
+        return;
+      }
+      pressedAt = Date.now();
+      startRec();
+    };
+    const onUp = (e) => {
+      e.preventDefault();
+      if (waitingTapStop) return;
+      const dur = Date.now() - pressedAt;
+      if (dur < 350 && recording) {
+        // 短すぎ＝タップとみなす。次タップで停止するモードへ
+        waitingTapStop = true;
+        const tx = document.getElementById('liveMicText');
+        if (tx) tx.textContent = 'TAP AGAIN TO STOP';
+      } else if (recording) {
+        stopAndSend();
+      }
+    };
+
+    btn.addEventListener('mousedown', onDown);
+    btn.addEventListener('mouseup', onUp);
+    btn.addEventListener('mouseleave', () => { if (recording && !waitingTapStop) stopAndSend(); });
+    btn.addEventListener('touchstart', onDown, { passive: false });
+    btn.addEventListener('touchend', onUp, { passive: false });
+  },
+
+  async liveTalkAiInitiate() {
+    const hist = Storage.get('live_chat_history', []);
+    if (hist.length !== 1) return;
+    const status = document.getElementById('liveStatus');
+    if (status) status.textContent = '🤖 Starting...';
+    try {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: _chatModel(), messages: [...hist, { role: 'user', content: 'Begin the conversation. Greet me naturally as your character.' }], temperature: 0.8, max_tokens: 120 })
+      });
+      const data = await r.json();
+      const reply = data.choices[0].message.content;
+      hist.push({ role: 'assistant', content: reply });
+      Storage.set('live_chat_history', hist);
+      const area = document.getElementById('liveChatArea');
+      if (area) {
+        area.innerHTML += `<div class="chat-msg chat-ai pop-in">${reply}</div>`;
+        area.scrollTop = area.scrollHeight;
+      }
+      if (status) status.textContent = '🔊 Speaking...';
+      Speech.speak(reply, 1.0, () => {
+        const s = document.getElementById('liveStatus');
+        if (s) s.textContent = 'Your turn 🎙️';
+      });
+    } catch (e) {
+      if (status) status.textContent = 'Error: ' + e.message;
+    }
   },
 
   async liveTalkAiInitiate() {
@@ -1978,47 +2494,138 @@ Analyze and return JSON.`;
     const status = document.getElementById('liveStatus');
     const area = document.getElementById('liveChatArea');
     try {
-      status.textContent = '🤖 Transcribing your voice...';
       const data = await Speech.stopRecording();
-      if (!data || data.blob.size < 500) {
-        status.textContent = 'Too short. Try again.';
+      if (!data || !data.blob || data.blob.size < 800) {
+        if (status) status.textContent = 'Too short — hold longer next time.';
         return;
       }
+      if (status) status.textContent = '📝 Transcribing...';
       const transcript = await Speech.transcribeWithWhisper(data.blob, data.mime);
-      if (!transcript.trim()) { status.textContent = 'No speech detected.'; return; }
+      if (!transcript || !transcript.trim()) {
+        if (status) status.textContent = "Couldn't catch that. Try again.";
+        return;
+      }
 
       const hist = Storage.get('live_chat_history', []);
       hist.push({ role: 'user', content: transcript });
       Storage.set('live_chat_history', hist);
-      area.innerHTML += `<div class="chat-msg chat-user">${transcript}</div>`;
-      area.scrollTop = area.scrollHeight;
+      if (area) {
+        area.innerHTML += `<div class="chat-msg chat-user pop-in">${transcript}</div>`;
+        area.scrollTop = area.scrollHeight;
+      }
 
-      status.textContent = '🤖 Thinking...';
+      // ストリーミング応答
+      if (status) status.textContent = '🤖 Thinking...';
       const sysExists = hist.find(m => m.role === 'system');
-      const messages = sysExists ? hist : [{ role: 'system', content: 'You are a warm English conversation partner for Zacky, a Japanese businessman preparing for a luxury flower sales trip to Indonesia. Reply in 1-3 sentences, casual but encouraging. End with a question to keep the conversation flowing.' }, ...hist];
+      const messages = sysExists ? hist : [
+        { role: 'system', content: 'You are a warm, articulate English conversation partner for Zacky, a Japanese businessman preparing for a luxury sales trip to Indonesia. Speak natural conversational English. Reply in 2-3 sentences, ending with a question to keep flowing.' },
+        ...hist
+      ];
+
+      const aiMsgEl = document.createElement('div');
+      aiMsgEl.className = 'chat-msg chat-ai pop-in';
+      aiMsgEl.textContent = '...';
+      if (area) {
+        area.appendChild(aiMsgEl);
+        area.scrollTop = area.scrollHeight;
+      }
+
       const r = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: _chatModel(), messages, temperature: 0.7, max_tokens: 150 })
+        body: JSON.stringify({
+          model: _chatModel(),
+          messages,
+          temperature: 0.8,
+          max_tokens: 200,
+          stream: true
+        })
       });
+
       if (!r.ok) {
-        status.textContent = 'API error: ' + r.status;
+        aiMsgEl.textContent = 'API error: ' + r.status;
+        if (status) status.textContent = '';
         return;
       }
-      const json = await r.json();
-      const reply = json.choices[0].message.content;
-      hist.push({ role: 'assistant', content: reply });
+
+      const reader = r.body.getReader();
+      const decoder = new TextDecoder();
+      let fullReply = '';
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const payload = trimmed.slice(5).trim();
+          if (payload === '[DONE]') continue;
+          try {
+            const obj = JSON.parse(payload);
+            const delta = obj.choices && obj.choices[0] && obj.choices[0].delta && obj.choices[0].delta.content;
+            if (delta) {
+              fullReply += delta;
+              aiMsgEl.textContent = fullReply;
+              if (area) area.scrollTop = area.scrollHeight;
+            }
+          } catch (e) { /* ignore parse errors */ }
+        }
+      }
+
+      hist.push({ role: 'assistant', content: fullReply });
       Storage.set('live_chat_history', hist);
-      area.innerHTML += `<div class="chat-msg chat-ai">${reply}</div>`;
-      area.scrollTop = area.scrollHeight;
-      status.textContent = '🔊 Speaking reply...';
-      Speech.speak(reply, 0.95, () => {
-        status.textContent = 'Your turn 🎙️';
+
+      if (status) status.textContent = '🔊 Speaking...';
+      Speech.speak(fullReply, 1.0, () => {
+        const s = document.getElementById('liveStatus');
+        if (s) s.textContent = 'Your turn 🎙️';
       });
       Storage.recordEvent('live_talk_turn');
       Storage.addXP(10);
     } catch (e) {
-      status.textContent = 'Error: ' + e.message;
+      console.error(e);
+      if (status) status.textContent = 'Error: ' + e.message;
+    }
+  },
+
+  // 会話途中のフィードバック要請
+  async liveTalkAskCorrection() {
+    const hist = Storage.get('live_chat_history', []);
+    const userTurns = hist.filter(m => m.role === 'user').slice(-3);
+    if (userTurns.length === 0) {
+      App.toast('Say something first');
+      return;
+    }
+    const status = document.getElementById('liveStatus');
+    const area = document.getElementById('liveChatArea');
+    if (status) status.textContent = '📝 Analyzing your last lines...';
+    try {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: _chatModel(),
+          messages: [
+            { role: 'system', content: 'You are an English coach. The user just had a conversation. Review their last utterances. Reply in Japanese with: ①最も良かった点（1行） ②最も改善できる1点 — 必ず元の文と「より上品/自然な言い方」を併記 ③次に試すべき1フレーズ。簡潔に。' },
+            { role: 'user', content: 'My last utterances:\n' + userTurns.map((m, i) => (i+1) + '. ' + m.content).join('\n') }
+          ],
+          temperature: 0.4,
+          max_tokens: 350
+        })
+      });
+      const data = await r.json();
+      const fb = data.choices[0].message.content;
+      if (area) {
+        area.innerHTML += `<div class="chat-msg chat-coach pop-in">📝 <b>COACH</b><br>${fb.replace(/\n/g, '<br>')}</div>`;
+        area.scrollTop = area.scrollHeight;
+      }
+      if (status) status.textContent = '';
+      Storage.addXP(5);
+    } catch (e) {
+      if (status) status.textContent = 'Coach error: ' + e.message;
     }
   },
 
