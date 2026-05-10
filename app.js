@@ -12,7 +12,7 @@ const App = {
     });
     // Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=11').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=12').catch(() => {});
     }
     // 起動時にアチーブメントチェック
     setTimeout(() => this.checkAchievements(), 800);
@@ -20,6 +20,50 @@ const App = {
     this.checkMicEnvironment();
     // 月曜自動レポート
     if (typeof Modules !== 'undefined' && Modules.checkAutoReport) Modules.checkAutoReport();
+    // 朝のコーチプラン自動生成
+    this.checkMorningCoach();
+  },
+
+  checkMorningCoach() {
+    if (!Storage.hasApiKey()) return;
+    const today = Storage.todayKey();
+    const cached = Storage.get('coach_plan_' + today, null);
+    if (cached) return; // 既に今日生成済み
+    const h = new Date().getHours();
+    if (h < 7) return; // 朝7時より前は何もしない
+    // 朝7時以降で今日まだ生成してないなら、バックグラウンドで自動生成
+    setTimeout(() => {
+      if (typeof Modules !== 'undefined' && Modules.generateCoachPlan) {
+        Modules.generateCoachPlan().then(plan => {
+          Storage.set('coach_plan_' + today, plan);
+          // ホーム画面の通知バナー
+          this.showCoachReadyNotification();
+        }).catch(() => {});
+      }
+    }, 1500); // ちょっと遅らせて起動を妨げない
+  },
+
+  showCoachReadyNotification() {
+    // ヒーローカードの近くに「今日のプランが届いた」と表示
+    const hero = document.getElementById('heroCard');
+    if (!hero) return;
+    let banner = document.getElementById('coachReadyBanner');
+    if (banner) return;
+    banner = document.createElement('button');
+    banner.id = 'coachReadyBanner';
+    banner.className = 'coach-ready-banner';
+    banner.innerHTML = `
+      <span style="font-size: 22px;">🌟</span>
+      <span style="flex:1; text-align:left;">
+        <span style="font-size: 12px; font-weight: 900; letter-spacing: 1px;">TODAY'S PLAN READY</span><br>
+        <span style="font-size: 11px; font-weight: 700; opacity: 0.95;">AIがあなた専用に作成しました</span>
+      </span>
+      <span style="font-size: 18px;">▶</span>
+    `;
+    banner.onclick = () => App.openModule('coach-plan');
+    hero.parentNode.insertBefore(banner, hero.nextSibling);
+    // 振動で気づかせる
+    if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
   },
 
   checkMicEnvironment() {
@@ -284,6 +328,8 @@ const App = {
       case 'composition': Modules.composition(); break;
       case 'coach-plan': Modules.coachPlan(); break;
       case 'more-menu': Modules.moreMenu(); break;
+      case 'realtime': Modules.realtime(); break;
+      case 'weakness-drill': Modules.weaknessDrill(); break;
       default:
         document.getElementById('modalBody').innerHTML = `<div class="modal-title">COMING SOON</div><button class="btn-primary" onclick="App.closeModal()">CLOSE</button>`;
     }

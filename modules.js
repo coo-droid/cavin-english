@@ -2266,6 +2266,411 @@ Analyze and return JSON.`;
   liveTalkState: null,
 
   // ===========================================
+  // 🎯 WEAKNESS DRILL
+  // 過去のCompositionでAIに繰り返し指摘されたミス・語彙をAIに抽出させ、ドリル化
+  // ===========================================
+  weaknessState: null,
+
+  weaknessDrill() {
+    if (!Storage.hasApiKey()) {
+      document.getElementById('modalBody').innerHTML = `
+        <div class="modal-title">🎯 WEAKNESS DRILL</div>
+        <div class="why-card">
+          <div class="why-label">🎯 WHY THIS</div>
+          <div class="why-text">過去のCompositionで何度もAIに指摘された「あなた特有の弱点」をAIに抽出させて、ピンポイントで叩き直すドリル。本番までに同じミスを2度としないために。</div>
+          <div class="why-impact">→ 苦手の完全潰し</div>
+        </div>
+        <div class="api-card">
+          <div class="api-status">⚙️ OPENAI API KEY REQUIRED</div>
+          <button class="btn-primary btn-success" onclick="App.openModule('chatgpt-api')">⚙️ SET API KEY</button>
+        </div>
+      `;
+      return;
+    }
+    const hist = Storage.get('comp_history', []);
+    if (hist.length < 2) {
+      document.getElementById('modalBody').innerHTML = `
+        <div class="modal-title">🎯 WEAKNESS DRILL</div>
+        <div class="why-card">
+          <div class="why-label">🎯 WHY THIS</div>
+          <div class="why-text">過去のCompositionから「あなた特有の繰り返しミス」をAIが抽出し、専用ドリルにしてくれる機能。</div>
+          <div class="why-impact">→ 自分専用の弱点ドリル</div>
+        </div>
+        <div style="text-align:center; padding: 40px 20px;">
+          <div style="font-size: 50px; margin-bottom: 12px;">📝</div>
+          <div style="font-size: 14px; color: var(--text); font-weight: 800; line-height: 1.6;">
+            データがまだ少ないです（${hist.length} 回）。<br>
+            <b>Composition</b> を3回以上やると、AIがあなたの弱点を抽出できるようになります。
+          </div>
+        </div>
+        <button class="btn-primary btn-pink" onclick="App.openModule('composition')">✍️ DO COMPOSITION</button>
+      `;
+      return;
+    }
+    // キャッシュ確認
+    const today = Storage.todayKey();
+    const cached = Storage.get('weakness_' + today, null);
+    if (cached) {
+      this.renderWeaknessDrill(cached);
+      return;
+    }
+    // 生成中表示
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">🎯 WEAKNESS DRILL</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">${PURPOSE.composition ? PURPOSE.composition.why : ''}</div>
+      </div>
+      <div style="text-align:center; padding: 30px 10px;">
+        <div style="font-size: 40px; margin-bottom: 10px;">🤖</div>
+        <div style="color: var(--info); font-weight: 900; font-size: 14px;">AI is analyzing your ${hist.length} past attempts...</div>
+        <div style="color: var(--text-soft); font-size: 12px; margin-top: 8px; font-weight: 700;">Finding patterns in your mistakes...</div>
+      </div>
+    `;
+    this.generateWeakness().then(weakness => {
+      Storage.set('weakness_' + today, weakness);
+      this.renderWeaknessDrill(weakness);
+    }).catch(e => {
+      console.error(e);
+      document.getElementById('modalBody').innerHTML = `
+        <div class="modal-title">🎯 WEAKNESS DRILL</div>
+        <div style="background:#ffe9e9; border:2px solid var(--danger); border-radius:14px; padding:14px; color:var(--danger-dark); font-weight:800;">
+          Error: ${e.message}
+        </div>
+        <button class="btn-primary" onclick="Modules.weaknessDrill()">🔁 RETRY</button>
+      `;
+    });
+  },
+
+  async generateWeakness() {
+    const hist = Storage.get('comp_history', []).slice(0, 15); // 直近15件
+    // AIに送るデータを整形
+    const records = hist.map(h => ({
+      situation: h.situation,
+      level: h.level,
+      attempts: h.attempts.map(a => ({
+        text: a.userText,
+        score: a.feedback && a.feedback.score,
+        grammar: a.feedback && a.feedback.grammar,
+        vocabulary: a.feedback && a.feedback.vocabulary
+      }))
+    }));
+
+    const sys = `You are an English-learning data analyst. The user is Zacky, a Japanese businessman preparing for a luxury sales trip to Indonesia. Below are his past Composition attempts and the AI feedback he received.
+
+Analyze them and find his TOP 3-5 RECURRING WEAKNESSES — patterns he makes repeatedly. Output STRICT JSON only:
+{
+  "summary_jp": "1 sentence Japanese overview of his weakness pattern",
+  "weaknesses": [
+    {
+      "id": "short-slug-id",
+      "title_jp": "短い日本語タイトル（10文字以内）",
+      "description_jp": "なぜこれが弱点か、何を繰り返してるか（2-3文）",
+      "drill_sentences": [
+        "An English sentence that targets this weakness — must use the exact correct form",
+        "Another targeted English sentence",
+        "Third targeted English sentence"
+      ],
+      "rule_jp": "意識すべきルール（1-2行）"
+    }
+  ]
+}
+
+Rules:
+- drill_sentences should be 8-15 words each, business-luxury context
+- Pick weaknesses that appear MULTIPLE times across his history
+- If history is small, infer likely weaknesses from limited data`;
+
+    const user = JSON.stringify(records);
+
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: _chatModel(),
+        messages: [
+          { role: 'system', content: sys },
+          { role: 'user', content: user }
+        ],
+        temperature: 0.4,
+        response_format: { type: 'json_object' },
+        max_tokens: 1800
+      })
+    });
+    if (!r.ok) throw new Error('API: ' + r.status);
+    const data = await r.json();
+    return JSON.parse(data.choices[0].message.content);
+  },
+
+  renderWeaknessDrill(w) {
+    const today = Storage.todayKey();
+    const doneWeak = Storage.get('weakness_done_' + today, []);
+    const list = (w.weaknesses || []).map((wk, i) => {
+      const done = doneWeak.includes(wk.id);
+      const sentences = (wk.drill_sentences || []).map(s => `
+        <div class="comp-issue" style="background: var(--bg-soft);">
+          <div style="font-size: 13px; font-weight: 800; color: var(--text); line-height: 1.5;">${s}</div>
+          <div style="display: flex; gap: 6px; margin-top: 8px;">
+            <button class="example-speak" onclick="Speech.speak(\`${s.replace(/`/g,"'")}\`, 0.9)">🔊 LISTEN</button>
+            <button class="example-speak" onclick="Shadowing.start(\`${s.replace(/`/g,"'")}\`, ${s.length > 60 ? 2 : 1});">🎬 DRILL</button>
+          </div>
+        </div>
+      `).join('');
+      return `
+        <div class="weakness-card ${done ? 'weakness-done' : ''}">
+          <div class="weakness-head">
+            <span class="weakness-num">${done ? '✓' : (i+1)}</span>
+            <span class="weakness-title">${wk.title_jp}</span>
+          </div>
+          <div class="weakness-desc">${wk.description_jp || ''}</div>
+          <div class="weakness-rule">📌 <b>ルール:</b> ${wk.rule_jp || ''}</div>
+          <div class="section-title" style="margin: 10px 0 6px;">PRACTICE SENTENCES</div>
+          ${sentences}
+          ${!done ? `<button class="btn-primary btn-success" style="margin-top: 8px;" onclick="Modules.weaknessMarkDone('${wk.id}')">✓ MARK MASTERED</button>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">🎯 YOUR WEAKNESSES · ${(w.weaknesses || []).length} found</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">${w.summary_jp || 'あなた特有のミスパターンをAIが抽出'}</div>
+        <div class="why-impact">→ ${doneWeak.length}/${(w.weaknesses || []).length} mastered today</div>
+      </div>
+      ${list}
+      <button class="btn-secondary" style="margin-top: 14px;" onclick="Modules.weaknessRegenerate()">🔄 REGENERATE FROM LATEST DATA</button>
+    `;
+  },
+
+  weaknessMarkDone(id) {
+    const today = Storage.todayKey();
+    const done = Storage.get('weakness_done_' + today, []);
+    if (!done.includes(id)) done.push(id);
+    Storage.set('weakness_done_' + today, done);
+    Storage.addXP(15);
+    App.confetti(20);
+    App.toast('+15 XP — Weakness mastered!');
+    this.weaknessDrill(); // 再表示
+  },
+
+  weaknessRegenerate() {
+    const today = Storage.todayKey();
+    Storage.remove('weakness_' + today);
+    Storage.set('weakness_done_' + today, []);
+    this.weaknessDrill();
+  },
+
+  // ===========================================
+  // ⚡ REALTIME VOICE — 完全双方向（gpt-4o-realtime-preview, WebRTC）
+  // 話している途中でも割り込める、本物の電話レベル
+  // ===========================================
+  realtimeState: null,
+
+  realtime() {
+    if (!Storage.hasApiKey()) {
+      document.getElementById('modalBody').innerHTML = `
+        <div class="modal-title">⚡ REALTIME VOICE</div>
+        <div class="why-card">
+          <div class="why-label">🎯 WHY REALTIME</div>
+          <div class="why-text">本物の電話レベルの双方向会話。話している途中で割り込める、AIも自然に間を取る。300ms以下の遅延で実会話に最も近い体験。</div>
+          <div class="why-impact">→ 商談本番のリアル・リハーサル</div>
+        </div>
+        <div class="api-card">
+          <div class="api-status">⚙️ OPENAI API KEY REQUIRED</div>
+          <button class="btn-primary btn-success" onclick="App.openModule('chatgpt-api')">⚙️ SET API KEY</button>
+        </div>
+      `;
+      return;
+    }
+
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">⚡ REALTIME VOICE · gpt-4o-realtime</div>
+      <div class="why-card">
+        <div class="why-label">🎯 WHY THIS</div>
+        <div class="why-text">マイクとスピーカーが繋がって、AIと電話のように話す。話している途中でAIが割り込んだり、あなたが割り込めたりする。実会話の最終練習。</div>
+        <div class="why-impact">→ 本番の感覚を体で覚える</div>
+      </div>
+
+      <div class="label">PICK A SCENARIO</div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="Modules.realtimeStart('meeting')">🤝 MEETING</button>
+        <button class="btn-primary btn-pink" onclick="Modules.realtimeStart('smalltalk')">💬 SMALL TALK</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="Modules.realtimeStart('negotiation')">💸 NEGOTIATION</button>
+        <button class="btn-secondary" onclick="Modules.realtimeStart('coach')">🎓 COACH</button>
+      </div>
+
+      <div id="realtimeStatus" class="live-status" style="margin-top:14px;">Pick a scenario to begin</div>
+      <div class="chat-area" id="realtimeChatArea" style="min-height: 180px; max-height: 40vh;"></div>
+
+      <button class="btn-primary btn-pink live-mic-btn" id="realtimeBtn" disabled style="opacity:0.5;">
+        <span>⚡</span>
+        <span>SCENARIO REQUIRED</span>
+      </button>
+
+      <div style="font-size: 11px; color: var(--text-soft); text-align: center; font-weight: 700; margin-top: 6px; line-height: 1.5;">
+        Tap mic → AI listens & speaks continuously · Tap again to end.<br>
+        <span style="color: var(--accent-dark);">⚠️ Cost: ~$0.06/min audio in + $0.24/min audio out</span>
+      </div>
+    `;
+  },
+
+  async realtimeStart(scenarioKey) {
+    const status = document.getElementById('realtimeStatus');
+    const area = document.getElementById('realtimeChatArea');
+    const btn = document.getElementById('realtimeBtn');
+
+    const prompts = this.liveTalkPrompts();
+    const instructions = prompts[scenarioKey] || prompts.coach;
+    const voiceCfg = Storage.get('ttsVoice', 'nova');
+    const allowed = ['alloy','ash','ballad','coral','echo','sage','shimmer','verse'];
+    const voice = allowed.includes(voiceCfg) ? voiceCfg : 'alloy';
+
+    if (status) status.textContent = '🤖 Connecting...';
+
+    try {
+      const localStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+
+      const pc = new RTCPeerConnection();
+
+      const audioEl = document.createElement('audio');
+      audioEl.autoplay = true;
+      pc.ontrack = (e) => { audioEl.srcObject = e.streams[0]; };
+
+      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+      const dc = pc.createDataChannel('oai-events');
+      dc.addEventListener('open', () => {
+        dc.send(JSON.stringify({
+          type: 'session.update',
+          session: {
+            instructions: instructions,
+            voice: voice,
+            input_audio_transcription: { model: 'whisper-1' },
+            turn_detection: { type: 'server_vad', threshold: 0.5, prefix_padding_ms: 300, silence_duration_ms: 700 },
+            modalities: ['text', 'audio']
+          }
+        }));
+        dc.send(JSON.stringify({
+          type: 'response.create',
+          response: { modalities: ['text', 'audio'] }
+        }));
+      });
+
+      let currentAiMsg = null;
+      dc.addEventListener('message', (e) => {
+        try {
+          const ev = JSON.parse(e.data);
+          if (ev.type === 'conversation.item.input_audio_transcription.completed') {
+            const transcript = ev.transcript;
+            if (transcript && area) {
+              const div = document.createElement('div');
+              div.className = 'chat-msg chat-user pop-in';
+              div.textContent = transcript;
+              area.appendChild(div);
+              area.scrollTop = area.scrollHeight;
+              Storage.recordEvent('live_talk_turn');
+              Storage.addXP(8);
+            }
+          } else if (ev.type === 'response.audio_transcript.delta') {
+            if (!currentAiMsg && area) {
+              currentAiMsg = document.createElement('div');
+              currentAiMsg.className = 'chat-msg chat-ai pop-in';
+              currentAiMsg.textContent = '';
+              area.appendChild(currentAiMsg);
+            }
+            if (currentAiMsg) {
+              currentAiMsg.textContent += ev.delta || '';
+              if (area) area.scrollTop = area.scrollHeight;
+            }
+          } else if (ev.type === 'response.audio_transcript.done') {
+            currentAiMsg = null;
+          } else if (ev.type === 'input_audio_buffer.speech_started') {
+            const s = document.getElementById('realtimeStatus');
+            if (s) s.textContent = '🔴 You speaking...';
+          } else if (ev.type === 'input_audio_buffer.speech_stopped') {
+            const s = document.getElementById('realtimeStatus');
+            if (s) s.textContent = '🤖 AI thinking...';
+          } else if (ev.type === 'response.done') {
+            const s = document.getElementById('realtimeStatus');
+            if (s) s.textContent = '🎙️ Your turn — just speak';
+          } else if (ev.type === 'error') {
+            console.error('Realtime error:', ev);
+            const s = document.getElementById('realtimeStatus');
+            if (s) s.textContent = '❌ ' + (ev.error && ev.error.message || 'Error');
+          }
+        } catch (err) { console.error(err); }
+      });
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      const model = 'gpt-4o-realtime-preview-2024-12-17';
+      const r = await fetch(`https://api.openai.com/v1/realtime?model=${model}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + Storage.getApiKey(),
+          'Content-Type': 'application/sdp'
+        },
+        body: offer.sdp
+      });
+      if (!r.ok) {
+        const errText = await r.text();
+        throw new Error('SDP exchange failed: ' + r.status + ' ' + errText.slice(0, 200));
+      }
+      const answerSdp = await r.text();
+      await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+
+      this.realtimeState = { pc, dc, localStream, audioEl, startedAt: Date.now() };
+
+      if (status) status.textContent = '✅ Connected · ' + scenarioKey.toUpperCase() + ' · Start speaking';
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.innerHTML = '<span>⏹</span><span>END SESSION</span>';
+        btn.classList.add('btn-danger');
+        btn.classList.remove('btn-pink');
+        btn.onclick = () => this.realtimeEnd();
+      }
+    } catch (e) {
+      console.error(e);
+      if (status) status.textContent = '❌ Failed: ' + e.message;
+      App.toast('Realtime error');
+    }
+  },
+
+  realtimeEnd() {
+    if (!this.realtimeState) return;
+    const { pc, dc, localStream, audioEl, startedAt } = this.realtimeState;
+    try { if (dc) dc.close(); } catch(e){}
+    try { if (pc) pc.close(); } catch(e){}
+    try { if (localStream) localStream.getTracks().forEach(t => t.stop()); } catch(e){}
+    try { if (audioEl) { audioEl.pause(); audioEl.srcObject = null; } } catch(e){}
+    const durSec = Math.round((Date.now() - startedAt) / 1000);
+    this.realtimeState = null;
+
+    const xpGain = Math.max(10, Math.floor(durSec / 2));
+    Storage.addXP(xpGain);
+    const area = document.getElementById('realtimeChatArea');
+    if (area) {
+      area.innerHTML += `<div class="chat-msg chat-coach pop-in">📊 Session ended · ${Math.floor(durSec/60)}m ${durSec%60}s · +${xpGain} XP</div>`;
+    }
+    const btn = document.getElementById('realtimeBtn');
+    if (btn) {
+      btn.innerHTML = '<span>⚡</span><span>NEW SESSION</span>';
+      btn.classList.remove('btn-danger');
+      btn.classList.add('btn-pink');
+      btn.onclick = () => this.realtime();
+    }
+    const status = document.getElementById('realtimeStatus');
+    if (status) status.textContent = 'Session ended ✓';
+  },
+
+  // ===========================================
   // 🎙️ LIVE TALK v2 — 滑らか・ホールド型・自動応答・ストリーミング
   // ===========================================
   liveTalk(scenario) {
