@@ -117,7 +117,7 @@ const Speech = {
   },
 
   async fetchTtsBlob(text, voice, rate) {
-    const instructions = Storage.get('ttsInstructions', 'Speak in a calm, sophisticated, articulate manner — like a luxury brand ambassador. Clear pronunciation. Natural pacing.');
+    const instructions = Storage.get('ttsInstructions', 'Speak briskly and energetically with clear pronunciation. Natural business pace — no slow articulation, no dramatic pauses. Sound like a confident professional in a fast-paced meeting.');
     const r = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
@@ -127,7 +127,7 @@ const Speech = {
         input: text,
         instructions: instructions,
         response_format: 'mp3',
-        speed: rate < 0.7 ? 0.7 : rate > 1.5 ? 1.5 : rate
+        speed: rate < 0.5 ? 0.5 : rate > 1.7 ? 1.7 : rate
       })
     });
     if (!r.ok) throw new Error('TTS API: ' + r.status);
@@ -199,11 +199,38 @@ const Speech = {
 
   _playUrl(url, onEnd, onFail) {
     const audio = new Audio(url);
+    // playbackRate で更に高速化（音程は維持）
+    const extraSpeed = (typeof Storage !== 'undefined' && Storage.get) ? Storage.get('audioPlaybackRate', 1.0) : 1.0;
+    audio.playbackRate = extraSpeed;
+    audio.preservesPitch = true;
     this.currentAudio = audio;
-    audio.onended = () => {
+
+    // 末尾の無音を検出して早期にend発火（最大0.4秒早める）
+    let endCalled = false;
+    const fireEnd = () => {
+      if (endCalled) return;
+      endCalled = true;
       if (this.currentAudio === audio) this.currentAudio = null;
+      try { audio.pause(); } catch {}
       if (onEnd) onEnd();
     };
+
+    audio.onloadedmetadata = () => {
+      const dur = audio.duration;
+      if (isFinite(dur) && dur > 1.0) {
+        // 末尾0.3秒前で強制終了
+        const cutAt = Math.max(0, dur - 0.3);
+        const timer = setInterval(() => {
+          if (!audio || endCalled || audio.paused) { clearInterval(timer); return; }
+          if (audio.currentTime >= cutAt) {
+            clearInterval(timer);
+            fireEnd();
+          }
+        }, 40);
+      }
+    };
+
+    audio.onended = fireEnd;
     audio.onerror = () => {
       if (this.currentAudio === audio) this.currentAudio = null;
       if (onFail) onFail();

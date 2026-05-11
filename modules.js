@@ -991,6 +991,32 @@ const Modules = {
         `).join('')}
       </div>
 
+      <div class="label" style="margin-top:14px;">⚡ AUDIO PLAYBACK SPEED</div>
+      <div style="background: var(--card); border: 2px solid var(--line); border-bottom-width: 3px; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;">
+        <div style="font-size: 12px; color: var(--text); font-weight: 800; line-height: 1.5; margin-bottom: 8px;">
+          TTS生成後、ブラウザ側でさらに速度調整します。音程は維持。<br>
+          <span style="font-size: 11px; color: var(--text-soft);">現在: ${Storage.get('audioPlaybackRate', 1.0)}x</span>
+        </div>
+        <div class="btn-row-3">
+          <button class="speed-btn ${Math.abs((Storage.get('audioPlaybackRate',1.0)||1.0)-1.0)<0.05?'active':''}" onclick="Storage.set('audioPlaybackRate',1.0); Modules.aiSettings();">1.0x</button>
+          <button class="speed-btn ${Math.abs((Storage.get('audioPlaybackRate',1.0)||1.0)-1.15)<0.05?'active':''}" onclick="Storage.set('audioPlaybackRate',1.15); Modules.aiSettings();">1.15x</button>
+          <button class="speed-btn ${Math.abs((Storage.get('audioPlaybackRate',1.0)||1.0)-1.3)<0.05?'active':''}" onclick="Storage.set('audioPlaybackRate',1.3); Modules.aiSettings();">1.3x</button>
+        </div>
+      </div>
+
+      <div class="label" style="margin-top:14px;">⏱ AUTO MODE GAP</div>
+      <div style="background: var(--card); border: 2px solid var(--line); border-bottom-width: 3px; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;">
+        <div style="font-size: 12px; color: var(--text); font-weight: 800; line-height: 1.5; margin-bottom: 8px;">
+          シャドーイング自動モード時、1回ごとの間。<br>
+          <span style="font-size: 11px; color: var(--text-soft);">現在: ${Storage.get('shadowGapMs', 150)}ms</span>
+        </div>
+        <div class="btn-row-3">
+          <button class="speed-btn ${(Storage.get('shadowGapMs',150)||150)===0?'active':''}" onclick="Storage.set('shadowGapMs',0); Modules.aiSettings();">即時 0ms</button>
+          <button class="speed-btn ${(Storage.get('shadowGapMs',150)||150)===150?'active':''}" onclick="Storage.set('shadowGapMs',150); Modules.aiSettings();">短い 150ms</button>
+          <button class="speed-btn ${(Storage.get('shadowGapMs',150)||150)===500?'active':''}" onclick="Storage.set('shadowGapMs',500); Modules.aiSettings();">標準 500ms</button>
+        </div>
+      </div>
+
       <div class="label" style="margin-top:14px;">⚡ TTS CACHE</div>
       <div style="background: var(--card); border: 2px solid var(--line); border-bottom-width: 3px; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;">
         <div style="font-size: 12px; color: var(--text); font-weight: 800; line-height: 1.5; margin-bottom: 8px;">

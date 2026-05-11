@@ -30,9 +30,10 @@ const Shadowing = {
   // 教材のTTS音声を事前生成（並列、UIブロックしない）
   prefetchAll(items) {
     if (!Speech || !Speech.prefetchTts) return;
-    const rates = [0.75, 0.85, 0.9, 1.1];
+    // デフォルト速度1.1を最優先で、他は後でキャッシュ
+    const userRate = (typeof Storage !== 'undefined' && Storage.get) ? Storage.get('shadowRate', 1.1) : 1.1;
+    const rates = [userRate, 0.85, 1.0, 1.25];
     items.forEach((it, i) => {
-      // すぐ使う最初のitemを最優先
       rates.forEach((r, ri) => {
         setTimeout(() => Speech.prefetchTts(it.text, r), i * 200 + ri * 80);
       });
@@ -146,9 +147,11 @@ const Shadowing = {
     if (!this.state) return;
     const item = this.state.session[this.state.sessionIndex];
     Speech.cancel();
-    Speech.speak(item.text, 0.85, () => {
+    const rate = (typeof Storage !== 'undefined' && Storage.get) ? Storage.get('shadowRate', 1.1) : 1.1;
+    const gapMs = (typeof Storage !== 'undefined' && Storage.get) ? Storage.get('shadowGapMs', 150) : 150;
+    Speech.speak(item.text, rate, () => {
       if (this.state && this.state.autoMode) {
-        setTimeout(() => this.nextRep(), 800);
+        setTimeout(() => this.nextRep(), gapMs);
       }
     });
   },
@@ -481,6 +484,11 @@ const Shadowing = {
       <div class="btn-row">
         <button class="btn-primary" onclick="Shadowing.playRound()">🔊 LISTEN</button>
         <button class="btn-primary btn-success" onclick="Shadowing.nextRep()">✓ NEXT REP</button>
+      </div>
+      <div class="btn-row-3" style="margin-bottom:8px;">
+        <button class="speed-btn ${Math.abs((Storage.get('shadowRate',1.1)||1.1)-0.85)<0.05?'active':''}" onclick="Storage.set('shadowRate',0.85); Speech.prefetchTts(Shadowing.state.session[Shadowing.state.sessionIndex].text, 0.85); Shadowing.renderItem();">SLOW 0.85x</button>
+        <button class="speed-btn ${Math.abs((Storage.get('shadowRate',1.1)||1.1)-1.1)<0.05?'active':''}" onclick="Storage.set('shadowRate',1.1); Speech.prefetchTts(Shadowing.state.session[Shadowing.state.sessionIndex].text, 1.1); Shadowing.renderItem();">NORMAL 1.1x</button>
+        <button class="speed-btn ${Math.abs((Storage.get('shadowRate',1.1)||1.1)-1.3)<0.05?'active':''}" onclick="Storage.set('shadowRate',1.3); Speech.prefetchTts(Shadowing.state.session[Shadowing.state.sessionIndex].text, 1.3); Shadowing.renderItem();">FAST 1.3x</button>
       </div>
       <button class="btn-secondary ${this.state.autoMode ? 'btn-purple' : ''}" onclick="Shadowing.toggleAuto()">${autoLabel}</button>
 
