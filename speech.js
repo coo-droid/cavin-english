@@ -198,47 +198,64 @@ const Speech = {
   },
 
   _playUrl(url, onEnd, onFail) {
+    // 前回のタイマーが残っていればクリア
+    if (this._cutTimer) { clearInterval(this._cutTimer); this._cutTimer = null; }
+
     const audio = new Audio(url);
-    // playbackRate で更に高速化（音程は維持）
     const extraSpeed = (typeof Storage !== 'undefined' && Storage.get) ? Storage.get('audioPlaybackRate', 1.0) : 1.0;
     audio.playbackRate = extraSpeed;
     audio.preservesPitch = true;
     this.currentAudio = audio;
 
-    // 末尾の無音を検出して早期にend発火（最大0.4秒早める）
     let endCalled = false;
     const fireEnd = () => {
       if (endCalled) return;
       endCalled = true;
+      if (this._cutTimer) { clearInterval(this._cutTimer); this._cutTimer = null; }
       if (this.currentAudio === audio) this.currentAudio = null;
       try { audio.pause(); } catch {}
       if (onEnd) onEnd();
     };
 
-    audio.onloadedmetadata = () => {
-      const dur = audio.duration;
-      if (isFinite(dur) && dur > 1.0) {
-        // 末尾0.3秒前で強制終了
+    // 末尾無音カットはONの時のみ動作（デフォルトOFF＝シャドーイング連続性優先）
+    const trimEnabled = (typeof Storage !== 'undefined' && Storage.get) ? Storage.get('trimEndSilence', false) : false;
+    if (trimEnabled) {
+      audio.onloadedmetadata = () => {
+        const dur = audio.duration;
+        if (!isFinite(dur) || dur <= 1.0) return;
         const cutAt = Math.max(0, dur - 0.3);
-        const timer = setInterval(() => {
-          if (!audio || endCalled || audio.paused) { clearInterval(timer); return; }
+        if (this._cutTimer) clearInterval(this._cutTimer);
+        this._cutTimer = setInterval(() => {
+          if (this.currentAudio !== audio || endCalled) {
+            clearInterval(this._cutTimer);
+            this._cutTimer = null;
+            return;
+          }
+          if (audio.paused) return;
           if (audio.currentTime >= cutAt) {
-            clearInterval(timer);
+            clearInterval(this._cutTimer);
+            this._cutTimer = null;
             fireEnd();
           }
         }, 40);
-      }
-    };
+      };
+    }
 
     audio.onended = fireEnd;
     audio.onerror = () => {
+      if (this._cutTimer) { clearInterval(this._cutTimer); this._cutTimer = null; }
       if (this.currentAudio === audio) this.currentAudio = null;
       if (onFail) onFail();
     };
-    audio.play().catch(() => { if (onFail) onFail(); });
+    audio.play().catch(() => {
+      if (this._cutTimer) { clearInterval(this._cutTimer); this._cutTimer = null; }
+      if (onFail) onFail();
+    });
   },
 
   cancel() {
+    // 末尾カットタイマーを止める
+    if (this._cutTimer) { clearInterval(this._cutTimer); this._cutTimer = null; }
     // ブラウザTTS停止
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     // OpenAI TTSオーディオ停止

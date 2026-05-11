@@ -146,12 +146,27 @@ const Shadowing = {
   async playRound() {
     if (!this.state) return;
     const item = this.state.session[this.state.sessionIndex];
+    // この再生のためのトークンを発行（後から起動した再生がある場合、古いcallbackは無視）
+    const myToken = (this._playToken || 0) + 1;
+    this._playToken = myToken;
+
     Speech.cancel();
+    // cancel直後にspeakが内部でも cancel を呼ぶので軽く待ってからspeak
+    await new Promise(r => setTimeout(r, 30));
+    if (this._playToken !== myToken) return; // 別の再生が走った
+    if (!this.state) return;
+
     const rate = (typeof Storage !== 'undefined' && Storage.get) ? Storage.get('shadowRate', 1.1) : 1.1;
     const gapMs = (typeof Storage !== 'undefined' && Storage.get) ? Storage.get('shadowGapMs', 150) : 150;
     Speech.speak(item.text, rate, () => {
+      // このコールバックは自分の再生からのもの？
+      if (this._playToken !== myToken) return;
       if (this.state && this.state.autoMode) {
-        setTimeout(() => this.nextRep(), gapMs);
+        setTimeout(() => {
+          if (this._playToken === myToken && this.state && this.state.autoMode) {
+            this.nextRep();
+          }
+        }, gapMs);
       }
     });
   },
