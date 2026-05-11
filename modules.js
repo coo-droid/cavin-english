@@ -991,8 +991,38 @@ const Modules = {
         `).join('')}
       </div>
 
+      <div class="label" style="margin-top:14px;">⚡ TTS CACHE</div>
+      <div style="background: var(--card); border: 2px solid var(--line); border-bottom-width: 3px; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;">
+        <div style="font-size: 12px; color: var(--text); font-weight: 800; line-height: 1.5; margin-bottom: 8px;">
+          シャドーイングなど同じ音声を繰り返すとき、1回目以降は<b>キャッシュから即再生</b>（0ms）。<br>
+          <span style="font-size: 11px; color: var(--text-soft);">Memory: ${Speech.ttsCache.size} items</span>
+        </div>
+        <button class="btn-secondary" onclick="Modules.clearTtsCache()" style="margin-bottom: 0;">🗑 CLEAR TTS CACHE</button>
+      </div>
+
       <button class="btn-primary btn-success" style="margin-top:16px;" onclick="Modules.chatgptApi()">✓ DONE</button>
     `;
+  },
+
+  clearTtsCache() {
+    if (Speech.ttsCache) {
+      for (const [, v] of Speech.ttsCache) {
+        try { URL.revokeObjectURL(v.url); } catch {}
+      }
+      Speech.ttsCache.clear();
+    }
+    // IDBもクリア
+    if (Speech.openTtsIdb) {
+      Speech.openTtsIdb().then(db => {
+        if (!db) return;
+        try {
+          const tx = db.transaction('tts', 'readwrite');
+          tx.objectStore('tts').clear();
+        } catch {}
+      });
+    }
+    App.toast('Cache cleared ✓');
+    this.aiSettings();
   },
 
   pickVoice(v) {

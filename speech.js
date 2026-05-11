@@ -26,6 +26,114 @@ const Speech = {
   currentAudio: null,
   ttsAbortController: null,
 
+  // TTSキャッシュ（メモリ + IndexedDB）
+  ttsCache: new Map(),       // key -> { url, blob, lastUsed }
+  ttsCacheMaxSize: 60,        // メモリ内最大件数
+  ttsIdb: null,
+  ttsIdbName: 'cavin-tts-cache-v1',
+
+  cacheKey(text, voice, rate) {
+    return `${voice}|${rate.toFixed(2)}|${text}`;
+  },
+
+  async openTtsIdb() {
+    if (this.ttsIdb) return this.ttsIdb;
+    return new Promise((resolve) => {
+      try {
+        const req = indexedDB.open(this.ttsIdbName, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains('tts')) db.createObjectStore('tts');
+        };
+        req.onsuccess = () => { this.ttsIdb = req.result; resolve(this.ttsIdb); };
+        req.onerror = () => resolve(null);
+      } catch { resolve(null); }
+    });
+  },
+
+  async getCachedBlob(key) {
+    // メモリ優先
+    if (this.ttsCache.has(key)) {
+      const item = this.ttsCache.get(key);
+      item.lastUsed = Date.now();
+      return item.blob;
+    }
+    // IDB
+    const db = await this.openTtsIdb();
+    if (!db) return null;
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction('tts', 'readonly');
+        const store = tx.objectStore('tts');
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      } catch { resolve(null); }
+    });
+  },
+
+  async putCachedBlob(key, blob) {
+    // メモリ
+    if (this.ttsCache.size >= this.ttsCacheMaxSize) {
+      // 最古を削除
+      let oldestKey = null, oldestT = Infinity;
+      for (const [k, v] of this.ttsCache) {
+        if (v.lastUsed < oldestT) { oldestT = v.lastUsed; oldestKey = k; }
+      }
+      if (oldestKey) {
+        const old = this.ttsCache.get(oldestKey);
+        try { URL.revokeObjectURL(old.url); } catch {}
+        this.ttsCache.delete(oldestKey);
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    this.ttsCache.set(key, { url, blob, lastUsed: Date.now() });
+    // IDB（バックグラウンド）
+    const db = await this.openTtsIdb();
+    if (!db) return url;
+    try {
+      const tx = db.transaction('tts', 'readwrite');
+      tx.objectStore('tts').put(blob, key);
+    } catch {}
+    return url;
+  },
+
+  // 任意のテキストを事前にキャッシュ（シャドーイング開始時など）
+  async prefetchTts(text, rate = 0.9) {
+    if (!Storage.hasApiKey() || !Storage.get('useOpenAiTts', true)) return;
+    const voice = Storage.get('ttsVoice', 'nova');
+    const key = this.cacheKey(text, voice, rate);
+    if (this.ttsCache.has(key)) return;
+    const cachedIdb = await this.getCachedBlob(key);
+    if (cachedIdb) {
+      const url = URL.createObjectURL(cachedIdb);
+      this.ttsCache.set(key, { url, blob: cachedIdb, lastUsed: Date.now() });
+      return;
+    }
+    try {
+      const blob = await this.fetchTtsBlob(text, voice, rate);
+      await this.putCachedBlob(key, blob);
+    } catch (e) { /* ignore */ }
+  },
+
+  async fetchTtsBlob(text, voice, rate) {
+    const instructions = Storage.get('ttsInstructions', 'Speak in a calm, sophisticated, articulate manner — like a luxury brand ambassador. Clear pronunciation. Natural pacing.');
+    const r = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + Storage.getApiKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini-tts',
+        voice: voice,
+        input: text,
+        instructions: instructions,
+        response_format: 'mp3',
+        speed: rate < 0.7 ? 0.7 : rate > 1.5 ? 1.5 : rate
+      })
+    });
+    if (!r.ok) throw new Error('TTS API: ' + r.status);
+    return r.blob();
+  },
+
   speak(text, rate = 0.9, onEnd = null) {
     // APIキーがあって、TTS有効ならOpenAI TTS（gpt-4o-mini-tts）を使う
     const ttsEnabled = (typeof Storage !== 'undefined' && Storage.hasApiKey() && Storage.get('useOpenAiTts', true));
@@ -50,61 +158,57 @@ const Speech = {
     return u;
   },
 
-  // OpenAI gpt-4o-mini-tts でリアルな人間の声
+  // OpenAI gpt-4o-mini-tts でリアルな人間の声（キャッシュ優先）
   async speakWithOpenAI(text, rate = 0.9, onEnd = null) {
     if (!Storage || !Storage.hasApiKey()) {
       this.speakWithBrowser(text, rate, onEnd);
       return;
     }
-    // 進行中があれば止める
     this.cancel();
 
-    const voice = Storage.get('ttsVoice', 'nova'); // デフォルト：nova（女性・温かい）
-    const instructions = Storage.get('ttsInstructions', 'Speak in a calm, sophisticated, articulate manner — like a luxury brand ambassador. Clear pronunciation. Natural pacing.');
+    const voice = Storage.get('ttsVoice', 'nova');
+    const key = this.cacheKey(text, voice, rate);
 
+    // ① メモリキャッシュHit → 即再生（数ms）
+    if (this.ttsCache.has(key)) {
+      const item = this.ttsCache.get(key);
+      item.lastUsed = Date.now();
+      this._playUrl(item.url, onEnd, () => this.speakWithBrowser(text, rate, onEnd));
+      return;
+    }
+
+    // ② IDBキャッシュHit
+    const cachedBlob = await this.getCachedBlob(key).catch(() => null);
+    if (cachedBlob) {
+      const url = URL.createObjectURL(cachedBlob);
+      this.ttsCache.set(key, { url, blob: cachedBlob, lastUsed: Date.now() });
+      this._playUrl(url, onEnd, () => this.speakWithBrowser(text, rate, onEnd));
+      return;
+    }
+
+    // ③ キャッシュなし → APIで取得して再生＋キャッシュ
     try {
       this.ttsAbortController = new AbortController();
-      const r = await fetch('https://api.openai.com/v1/audio/speech', {
-        method: 'POST',
-        signal: this.ttsAbortController.signal,
-        headers: {
-          'Authorization': 'Bearer ' + Storage.getApiKey(),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini-tts',
-          voice: voice,
-          input: text,
-          instructions: instructions,
-          response_format: 'mp3',
-          speed: rate < 0.7 ? 0.7 : rate > 1.5 ? 1.5 : rate
-        })
-      });
-      if (!r.ok) {
-        // フォールバック
-        this.speakWithBrowser(text, rate, onEnd);
-        return;
-      }
-      const blob = await r.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      this.currentAudio = audio;
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        if (this.currentAudio === audio) this.currentAudio = null;
-        if (onEnd) onEnd();
-      };
-      audio.onerror = () => {
-        URL.revokeObjectURL(url);
-        if (this.currentAudio === audio) this.currentAudio = null;
-        // エラー時はブラウザTTSにフォールバック
-        this.speakWithBrowser(text, rate, onEnd);
-      };
-      audio.play().catch(() => this.speakWithBrowser(text, rate, onEnd));
+      const blob = await this.fetchTtsBlob(text, voice, rate);
+      const url = await this.putCachedBlob(key, blob);
+      this._playUrl(url, onEnd, () => this.speakWithBrowser(text, rate, onEnd));
     } catch (e) {
-      // ネットワークエラー等 → ブラウザTTSにフォールバック
       if (e.name !== 'AbortError') this.speakWithBrowser(text, rate, onEnd);
     }
+  },
+
+  _playUrl(url, onEnd, onFail) {
+    const audio = new Audio(url);
+    this.currentAudio = audio;
+    audio.onended = () => {
+      if (this.currentAudio === audio) this.currentAudio = null;
+      if (onEnd) onEnd();
+    };
+    audio.onerror = () => {
+      if (this.currentAudio === audio) this.currentAudio = null;
+      if (onFail) onFail();
+    };
+    audio.play().catch(() => { if (onFail) onFail(); });
   },
 
   cancel() {

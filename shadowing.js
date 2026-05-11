@@ -12,9 +12,9 @@ const Shadowing = {
   startSession() {
     const items = this.pickSessionItems();
     this.state = {
-      session: items,        // 配列：[short1, short2, long1] の順
+      session: items,
       sessionIndex: 0,
-      current: 0,            // 現在のitemでの繰り返し数
+      current: 0,
       isRecording: false,
       lastRecordingUrl: null,
       autoMode: false,
@@ -23,6 +23,20 @@ const Shadowing = {
     };
     this.startTimer();
     this.renderItem();
+    // 全教材を3速度で事前生成（裏で並列）
+    this.prefetchAll(items);
+  },
+
+  // 教材のTTS音声を事前生成（並列、UIブロックしない）
+  prefetchAll(items) {
+    if (!Speech || !Speech.prefetchTts) return;
+    const rates = [0.75, 0.85, 0.9, 1.1];
+    items.forEach((it, i) => {
+      // すぐ使う最初のitemを最優先
+      rates.forEach((r, ri) => {
+        setTimeout(() => Speech.prefetchTts(it.text, r), i * 200 + ri * 80);
+      });
+    });
   },
 
   // 履歴ベースで次の3教材を選ぶ（前回と被りにくいように）
@@ -499,9 +513,9 @@ const Shadowing = {
   startFromCustom(level) {
     const text = document.getElementById('customShadowText').value.trim();
     if (!text) { App.toast('Type something first'); return; }
-    // 単発セッションとして扱う
+    const item = { text, level, target: level === 1 ? 50 : 20, why: '自分で選んだ英文。あなたが本番で使いたい言葉。' };
     this.state = {
-      session: [{ text, level, target: level === 1 ? 50 : 20, why: '自分で選んだ英文。あなたが本番で使いたい言葉。' }],
+      session: [item],
       sessionIndex: 0,
       current: 0,
       isRecording: false,
@@ -512,14 +526,15 @@ const Shadowing = {
     };
     this.startTimer();
     this.renderItem();
+    this.prefetchAll([item]);
   },
 
   // 単一教材の起動（既存の他モジュールから呼ばれる用）
-  // start(text, level) を後方互換で残す
   start(text, level) {
     const lvl = level || (text.length > 60 ? 2 : 1);
+    const item = { text, level: lvl, target: lvl === 1 ? 50 : 20, why: getShadowWhy(text) || 'この一文を口の筋肉に染み込ませる。' };
     this.state = {
-      session: [{ text, level: lvl, target: lvl === 1 ? 50 : 20, why: getShadowWhy(text) || 'この一文を口の筋肉に染み込ませる。' }],
+      session: [item],
       sessionIndex: 0,
       current: 0,
       isRecording: false,
@@ -530,5 +545,6 @@ const Shadowing = {
     };
     this.startTimer();
     this.renderItem();
+    this.prefetchAll([item]);
   }
 };
