@@ -2518,8 +2518,8 @@ Rules:
   },
 
   // ===========================================
-  // ⚡ REALTIME VOICE — 完全双方向（gpt-4o-realtime-preview, WebRTC）
-  // 話している途中でも割り込める、本物の電話レベル
+  // ⚡ REALTIME VOICE — gpt-realtime-2 (latest, 2026 release)
+  // 完全双方向、自然な間、割り込み可能。実電話レベル。
   // ===========================================
   realtimeState: null,
 
@@ -2529,7 +2529,7 @@ Rules:
         <div class="modal-title">⚡ REALTIME VOICE</div>
         <div class="why-card">
           <div class="why-label">🎯 WHY REALTIME</div>
-          <div class="why-text">本物の電話レベルの双方向会話。話している途中で割り込める、AIも自然に間を取る。300ms以下の遅延で実会話に最も近い体験。</div>
+          <div class="why-text">本物の電話レベルの双方向会話。あなたが話し始めるとAIが止まる、AIが話している途中であなたが入れる。実会話に最も近い練習。</div>
           <div class="why-impact">→ 商談本番のリアル・リハーサル</div>
         </div>
         <div class="api-card">
@@ -2540,13 +2540,30 @@ Rules:
       return;
     }
 
+    const voiceCfg = Storage.get('rtVoice', 'marin');
+    const voices = [
+      { id: 'marin', desc: '女性・暖かく明瞭（推奨）' },
+      { id: 'cedar', desc: '男性・落ち着いた' },
+      { id: 'alloy', desc: '中性・標準' },
+      { id: 'shimmer', desc: '女性・若い' },
+      { id: 'echo', desc: '男性・低音' },
+      { id: 'verse', desc: '女性・繊細' }
+    ];
+    const voicePicker = voices.map(v => `
+      <button class="speed-btn ${v.id === voiceCfg ? 'active' : ''}" onclick="Storage.set('rtVoice','${v.id}'); Modules.realtime();">${v.id.toUpperCase()}</button>
+    `).join('');
+
     document.getElementById('modalBody').innerHTML = `
-      <div class="modal-title">⚡ REALTIME VOICE · gpt-4o-realtime</div>
+      <div class="modal-title">⚡ REALTIME VOICE · gpt-realtime-2</div>
       <div class="why-card">
         <div class="why-label">🎯 WHY THIS</div>
-        <div class="why-text">マイクとスピーカーが繋がって、AIと電話のように話す。話している途中でAIが割り込んだり、あなたが割り込めたりする。実会話の最終練習。</div>
-        <div class="why-impact">→ 本番の感覚を体で覚える</div>
+        <div class="why-text">最新フラッグシップ <b>gpt-realtime-2</b> を直接WebRTC接続。マイクとスピーカーが繋がって、電話のように自然に会話できる。あなたが話せばAIが黙る、AIが話してる途中で入れる。</div>
+        <div class="why-impact">→ 本番の感覚を体で覚える最終練習</div>
       </div>
+
+      <div class="label">🎙️ VOICE (現在: ${voiceCfg.toUpperCase()})</div>
+      <div class="btn-row-3" style="margin-bottom: 6px;">${voicePicker.slice(0, voicePicker.length / 2)}</div>
+      <div class="btn-row-3" style="margin-bottom: 12px;">${voicePicker.slice(voicePicker.length / 2)}</div>
 
       <div class="label">PICK A SCENARIO</div>
       <div class="btn-row">
@@ -2558,7 +2575,7 @@ Rules:
         <button class="btn-secondary" onclick="Modules.realtimeStart('coach')">🎓 COACH</button>
       </div>
 
-      <div id="realtimeStatus" class="live-status" style="margin-top:14px;">Pick a scenario to begin</div>
+      <div id="realtimeStatus" class="live-status" style="margin-top:14px;">Pick a scenario to start</div>
       <div class="chat-area" id="realtimeChatArea" style="min-height: 180px; max-height: 40vh;"></div>
 
       <button class="btn-primary btn-pink live-mic-btn" id="realtimeBtn" disabled style="opacity:0.5;">
@@ -2567,8 +2584,8 @@ Rules:
       </button>
 
       <div style="font-size: 11px; color: var(--text-soft); text-align: center; font-weight: 700; margin-top: 6px; line-height: 1.5;">
-        Tap mic → AI listens & speaks continuously · Tap again to end.<br>
-        <span style="color: var(--accent-dark);">⚠️ Cost: ~$0.06/min audio in + $0.24/min audio out</span>
+        Just talk — AI listens & responds in real-time.<br>
+        <span style="color: var(--accent-dark);">💰 Cost: ~$32/M input · $64/M output audio tokens</span>
       </div>
     `;
   },
@@ -2579,16 +2596,31 @@ Rules:
     const btn = document.getElementById('realtimeBtn');
 
     const prompts = this.liveTalkPrompts();
-    const instructions = prompts[scenarioKey] || prompts.coach;
-    const voiceCfg = Storage.get('ttsVoice', 'nova');
-    const allowed = ['alloy','ash','ballad','coral','echo','sage','shimmer','verse'];
-    const voice = allowed.includes(voiceCfg) ? voiceCfg : 'alloy';
+    const baseInstructions = prompts[scenarioKey] || prompts.coach;
+    // 自然な会話強化
+    const instructions = baseInstructions + `
 
-    if (status) status.textContent = '🤖 Connecting...';
+CRITICAL CONVERSATION RULES:
+- Speak naturally at brisk business pace — never too slow.
+- Use natural fillers occasionally (well, actually, you know, hmm).
+- Keep most replies SHORT (1-2 sentences). End with a question to keep flow.
+- If user pauses, DON'T rush — let them think. Wait for them to finish.
+- If user interrupts you, stop immediately and listen.
+- Stay 100% in character. Never break the scenario.`;
+
+    const voice = Storage.get('rtVoice', 'marin');
+
+    if (status) status.textContent = '🤖 Connecting to gpt-realtime-2...';
+    if (btn) btn.disabled = true;
 
     try {
       const localStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 24000
+        }
       });
 
       const pc = new RTCPeerConnection();
@@ -2600,29 +2632,43 @@ Rules:
       localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
 
       const dc = pc.createDataChannel('oai-events');
+
+      // セッション設定（新API形式: session.type='realtime'）
       dc.addEventListener('open', () => {
         dc.send(JSON.stringify({
           type: 'session.update',
           session: {
+            type: 'realtime',
             instructions: instructions,
-            voice: voice,
-            input_audio_transcription: { model: 'whisper-1' },
-            turn_detection: { type: 'server_vad', threshold: 0.5, prefix_padding_ms: 300, silence_duration_ms: 700 },
-            modalities: ['text', 'audio']
+            audio: {
+              input: {
+                transcription: { model: 'gpt-4o-transcribe' },
+                turn_detection: {
+                  type: 'server_vad',
+                  threshold: 0.55,           // 少し高めで誤検出を減らす
+                  prefix_padding_ms: 250,    // 短く＝レスポンス速く
+                  silence_duration_ms: 500   // 0.5秒の沈黙でターン終了
+                }
+              },
+              output: {
+                voice: voice,
+                speed: 1.1                  // 少し早めに
+              }
+            }
           }
         }));
-        dc.send(JSON.stringify({
-          type: 'response.create',
-          response: { modalities: ['text', 'audio'] }
-        }));
+        // 最初のAI挨拶を即座にトリガー
+        dc.send(JSON.stringify({ type: 'response.create' }));
       });
 
       let currentAiMsg = null;
       dc.addEventListener('message', (e) => {
         try {
           const ev = JSON.parse(e.data);
-          if (ev.type === 'conversation.item.input_audio_transcription.completed') {
-            const transcript = ev.transcript;
+          // ユーザー発話の文字起こし完了
+          if (ev.type === 'conversation.item.input_audio_transcription.completed' ||
+              ev.type === 'conversation.item.input_audio_transcription.done') {
+            const transcript = ev.transcript || ev.text;
             if (transcript && area) {
               const div = document.createElement('div');
               div.className = 'chat-msg chat-user pop-in';
@@ -2632,7 +2678,10 @@ Rules:
               Storage.recordEvent('live_talk_turn');
               Storage.addXP(8);
             }
-          } else if (ev.type === 'response.audio_transcript.delta') {
+          }
+          // AI応答テキストのストリーム
+          else if (ev.type === 'response.audio_transcript.delta' ||
+                   ev.type === 'response.output_audio_transcript.delta') {
             if (!currentAiMsg && area) {
               currentAiMsg = document.createElement('div');
               currentAiMsg.className = 'chat-msg chat-ai pop-in';
@@ -2643,47 +2692,82 @@ Rules:
               currentAiMsg.textContent += ev.delta || '';
               if (area) area.scrollTop = area.scrollHeight;
             }
-          } else if (ev.type === 'response.audio_transcript.done') {
+          }
+          else if (ev.type === 'response.audio_transcript.done' ||
+                   ev.type === 'response.output_audio_transcript.done') {
             currentAiMsg = null;
-          } else if (ev.type === 'input_audio_buffer.speech_started') {
+          }
+          // ユーザー発話開始 → AI即座に黙る
+          else if (ev.type === 'input_audio_buffer.speech_started') {
             const s = document.getElementById('realtimeStatus');
             if (s) s.textContent = '🔴 You speaking...';
-          } else if (ev.type === 'input_audio_buffer.speech_stopped') {
+          }
+          else if (ev.type === 'input_audio_buffer.speech_stopped') {
             const s = document.getElementById('realtimeStatus');
             if (s) s.textContent = '🤖 AI thinking...';
-          } else if (ev.type === 'response.done') {
+          }
+          else if (ev.type === 'response.created') {
+            const s = document.getElementById('realtimeStatus');
+            if (s) s.textContent = '💬 AI responding...';
+          }
+          else if (ev.type === 'response.done') {
             const s = document.getElementById('realtimeStatus');
             if (s) s.textContent = '🎙️ Your turn — just speak';
-          } else if (ev.type === 'error') {
+          }
+          else if (ev.type === 'session.created' || ev.type === 'session.updated') {
+            const s = document.getElementById('realtimeStatus');
+            if (s) s.textContent = '✅ Connected · ' + scenarioKey.toUpperCase();
+          }
+          else if (ev.type === 'error') {
             console.error('Realtime error:', ev);
             const s = document.getElementById('realtimeStatus');
-            if (s) s.textContent = '❌ ' + (ev.error && ev.error.message || 'Error');
+            if (s) s.textContent = '❌ ' + (ev.error && ev.error.message || JSON.stringify(ev).slice(0, 100));
           }
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error('parse error:', err); }
       });
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const model = 'gpt-4o-realtime-preview-2024-12-17';
-      const r = await fetch(`https://api.openai.com/v1/realtime?model=${model}`, {
+      // 新エンドポイント /v1/realtime/calls (multipart with session config)
+      const sessionConfig = {
+        type: 'realtime',
+        model: 'gpt-realtime',  // gpt-realtime-2 相当の最新エイリアス
+        audio: { output: { voice: voice } }
+      };
+      const fd = new FormData();
+      fd.set('sdp', offer.sdp);
+      fd.set('session', JSON.stringify(sessionConfig));
+
+      let r = await fetch('https://api.openai.com/v1/realtime/calls', {
         method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + Storage.getApiKey(),
-          'Content-Type': 'application/sdp'
-        },
-        body: offer.sdp
+        headers: { 'Authorization': 'Bearer ' + Storage.getApiKey() },
+        body: fd
       });
+
+      // フォールバック：旧エンドポイントを試す（互換性）
       if (!r.ok) {
         const errText = await r.text();
-        throw new Error('SDP exchange failed: ' + r.status + ' ' + errText.slice(0, 200));
+        console.warn('New endpoint failed, trying legacy:', r.status, errText.slice(0, 200));
+        r = await fetch('https://api.openai.com/v1/realtime?model=gpt-realtime', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + Storage.getApiKey(),
+            'Content-Type': 'application/sdp'
+          },
+          body: offer.sdp
+        });
+        if (!r.ok) {
+          const errText2 = await r.text();
+          throw new Error('SDP exchange failed: ' + r.status + ' ' + errText2.slice(0, 200));
+        }
       }
       const answerSdp = await r.text();
       await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
 
       this.realtimeState = { pc, dc, localStream, audioEl, startedAt: Date.now() };
 
-      if (status) status.textContent = '✅ Connected · ' + scenarioKey.toUpperCase() + ' · Start speaking';
+      if (status) status.textContent = '✅ Connected · ' + scenarioKey.toUpperCase() + ' · Speak now';
       if (btn) {
         btn.disabled = false;
         btn.style.opacity = '1';
@@ -2695,7 +2779,8 @@ Rules:
     } catch (e) {
       console.error(e);
       if (status) status.textContent = '❌ Failed: ' + e.message;
-      App.toast('Realtime error');
+      App.toast('Realtime error: ' + e.message);
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
     }
   },
 

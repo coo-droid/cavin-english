@@ -1422,6 +1422,24 @@ textarea:focus, input:focus { outline: none; border-color: var(--info); }
   border-left: 2px solid var(--purple);
 }
 
+/* Realtime CTA — most prominent (gpt-realtime-2 hero button) */
+.realtime-cta {
+  background: linear-gradient(135deg, #ff4b8b 0%, #b91d56 50%, #5a0f24 100%) !important;
+  border-bottom-color: #3d0a18 !important;
+  animation: realtimePulse 2.5s ease-in-out infinite;
+}
+@keyframes realtimePulse {
+  0%, 100% { box-shadow: 0 5px 0 #3d0a18, 0 5px 8px rgba(255, 75, 139, 0.0); }
+  50% { box-shadow: 0 5px 0 #3d0a18, 0 5px 24px rgba(255, 75, 139, 0.55); }
+}
+.realtime-cta::after {
+  content: "⚡" !important;
+  font-size: 90px !important;
+  right: -10px !important;
+  top: -15px !important;
+  opacity: 0.2 !important;
+}
+
 /* Daily Flow CTA — big home button */
 .daily-flow-cta {
   display: flex;
