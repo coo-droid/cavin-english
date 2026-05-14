@@ -12,7 +12,7 @@ const App = {
     });
     // Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=16').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=17').catch(() => {});
     }
     // 起動時にアチーブメントチェック
     setTimeout(() => this.checkAchievements(), 800);
@@ -228,6 +228,12 @@ const App = {
       document.getElementById('storyBanner').style.display = 'none';
     }
 
+    // v17 Latest Output + Must-Use Phrases panel
+    if (typeof Modules !== 'undefined') {
+      if (Modules.renderLatestOutput) Modules.renderLatestOutput('latestOutputPanel');
+      if (Modules.renderMustUsePanel) Modules.renderMustUsePanel('mustUsePanel');
+    }
+
     // 「次にやるべき」と「スケジュール」はホームから外したので、要素があれば更新するだけ（安全に）
     const cur = d.getHours() * 60 + d.getMinutes();
     let displayItem = SCHEDULE.find(s => s.mins >= cur && !Storage.isDone(s.key));
@@ -330,6 +336,8 @@ const App = {
       case 'more-menu': Modules.moreMenu(); break;
       case 'realtime': Modules.realtime(); break;
       case 'weakness-drill': Modules.weaknessDrill(); break;
+      case 'writing-review': Modules.writingReview(); break;
+      case 'output-archive': Modules.outputArchive(); break;
       default:
         document.getElementById('modalBody').innerHTML = `<div class="modal-title">COMING SOON</div><button class="btn-primary" onclick="App.closeModal()">CLOSE</button>`;
     }

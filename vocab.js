@@ -19,7 +19,14 @@ const Vocab = {
         repetitions: 0, // 連続正解回数
         nextReview: null, // ISO日付
         addedAt: new Date().toISOString(),
-        lastReviewed: null
+        lastReviewed: null,
+        // v17 拡張
+        source: 'initial',
+        sourceOutputId: null,
+        contextExample: '',
+        refinedExample: '',
+        forcedUseCount: 0,
+        whyUseful: ''
       }));
       Storage.set(this.KEY, items);
     }
@@ -41,7 +48,14 @@ const Vocab = {
       repetitions: 0,
       nextReview: null,
       addedAt: new Date().toISOString(),
-      lastReviewed: null
+      lastReviewed: null,
+      // v17 拡張: 出力ループ由来の語彙
+      source: item.source || 'manual',           // 'initial'|'extracted'|'manual'
+      sourceOutputId: item.sourceOutputId || null,
+      contextExample: item.contextExample || '', // Zackyが言いたかった文
+      refinedExample: item.refinedExample || '', // イケてる版
+      forcedUseCount: item.forcedUseCount || 0,
+      whyUseful: item.whyUseful || ''
     });
     this.save(items);
   },

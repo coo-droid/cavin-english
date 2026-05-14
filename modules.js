@@ -3350,5 +3350,415 @@ ${totalDoneDays >= 6 ? '🔥 Iron week! You showed up.' :
       const t = document.getElementById('aiThinking');
       if (t) t.innerHTML = `<span style="color:var(--danger);">Network error. Try again.</span>`;
     }
+  },
+
+  // =====================================================
+  // v17 ✍️ WRITING REVIEW — テキスト → AIレビュー → Vocab自動登録
+  // =====================================================
+  writingReview() {
+    const draft = Storage.get('wr_draft', '');
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">✍️ WRITING REVIEW</div>
+      <div class="why-card">
+        <div class="why-label">🎯 OUTPUT LOOP</div>
+        <div class="why-text">あなたの言いたいことを英語で書く → AIコーチがレビュー → イケてる版+使えるフレーズが自動で語彙帳に入る → 後日強制再利用。</div>
+        <div class="why-impact">→ 教材消化型から「自分の言葉を磨く」型へ</div>
+      </div>
+      <div class="label">YOUR ENGLISH (なんでもOK・メール・トーク・想定発話)</div>
+      <textarea id="wrInput" rows="8" placeholder="Type or paste your English here. Even rough is fine — that's the point.">${draft || ''}</textarea>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="Modules.writingReviewVoice()">🎙️ SPEAK INSTEAD</button>
+        <button class="btn-secondary" onclick="document.getElementById('wrInput').value=''; Storage.set('wr_draft','');">🗑 CLEAR</button>
+      </div>
+      <button class="btn-primary btn-pink" onclick="Modules.writingReviewSubmit()">🤖 GET AI REVIEW</button>
+      <div id="wrResult"></div>
+      <button class="btn-secondary" onclick="App.openModule('output-archive')" style="margin-top:10px;">📓 PAST OUTPUTS ARCHIVE</button>
+    `;
+    // ドラフト自動保存
+    setTimeout(() => {
+      const ta = document.getElementById('wrInput');
+      if (ta) ta.addEventListener('input', () => Storage.set('wr_draft', ta.value));
+    }, 100);
+  },
+
+  async writingReviewVoice() {
+    const input = document.getElementById('wrInput');
+    if (!input) return;
+    if (!Storage.hasApiKey()) {
+      App.toast('音声入力にはAPI Keyが必要');
+      return;
+    }
+    try {
+      await Speech.startRecording();
+      const oldText = input.value;
+      const btn = document.querySelector('button.btn-secondary[onclick*="writingReviewVoice"]');
+      if (btn) {
+        btn.textContent = '⏹ STOP & TRANSCRIBE';
+        btn.onclick = async () => {
+          btn.textContent = '🤖 Transcribing...';
+          btn.disabled = true;
+          try {
+            const data = await Speech.stopRecording();
+            const text = await Speech.transcribeWithWhisper(data.blob, data.mime);
+            input.value = (oldText ? oldText + ' ' : '') + text;
+            Storage.set('wr_draft', input.value);
+          } catch (e) {
+            App.toast('Whisper failed: ' + e.message);
+          }
+          btn.textContent = '🎙️ SPEAK INSTEAD';
+          btn.disabled = false;
+          btn.onclick = () => Modules.writingReviewVoice();
+        };
+      }
+    } catch (e) {
+      App.toast('Mic error: ' + e.message);
+    }
+  },
+
+  async writingReviewSubmit() {
+    const input = document.getElementById('wrInput');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) { App.toast('Type something first'); return; }
+    const result = document.getElementById('wrResult');
+    if (!Storage.hasApiKey()) {
+      result.innerHTML = `
+        <div class="api-card">
+          <div class="api-status">⚙️ API KEY REQUIRED</div>
+          <button class="btn-primary btn-success" onclick="App.openModule('chatgpt-api')">⚙️ SET API KEY</button>
+        </div>
+      `;
+      return;
+    }
+    result.innerHTML = `
+      <div style="text-align:center; padding: 18px;">
+        <div style="font-size: 30px;">🤖</div>
+        <div style="margin-top: 6px; color: var(--info); font-weight: 900;">Coach is reviewing your output...</div>
+        <div style="font-size:11px; color: var(--text-soft); font-weight:700; margin-top:4px;">レビュー → 語彙抽出 → Vocab登録まで一気にやります</div>
+      </div>
+    `;
+    try {
+      const { entry } = await reviewOutput(text, 'writing');
+      Storage.set('wr_draft', '');
+      Storage.recordEvent('writing_review');
+      Storage.addXP(15);
+      App.awardXP(15);
+      this.writingReviewRender(entry);
+    } catch (e) {
+      result.innerHTML = `<div style="color:var(--danger); font-weight:800; padding:12px;">${e.message}</div>`;
+    }
+  },
+
+  writingReviewRender(entry) {
+    const issuesHtml = (entry.issues || []).map(i => `
+      <div style="background:#fff8f0; border:2px solid var(--accent); border-radius:10px; padding:10px; margin-bottom:8px;">
+        <div style="font-size:11px; font-weight:900; color:var(--accent-dark); letter-spacing:1px;">${(i.type||'').toUpperCase()}</div>
+        <div style="font-size:13px; font-weight:800; margin-top:4px;">"${i.quote||''}"</div>
+        <div style="font-size:13px; color:var(--success-dark); font-weight:800; margin-top:4px;">→ ${i.fix||''}</div>
+        <div style="font-size:12px; color:var(--text-soft); font-weight:700; margin-top:4px;">${i.why||''}</div>
+      </div>
+    `).join('');
+    const extractHtml = (entry.extract || []).map(ex => `
+      <div style="background:#f0f8ff; border:2px solid var(--info); border-radius:10px; padding:10px; margin-bottom:8px;">
+        <div style="font-size:11px; font-weight:900; color:var(--info); letter-spacing:1px;">${(ex.type||'phrase').toUpperCase()} · 語彙登録済 ✓</div>
+        <div style="font-size:14px; font-weight:900; margin-top:4px;">${ex.en||''}</div>
+        <div style="font-size:12px; color:var(--text); font-weight:800; margin-top:2px;">${ex.jp||''}</div>
+        <div style="font-size:11px; color:var(--text-soft); font-weight:700; margin-top:4px;">${ex.why_useful||''}</div>
+        ${ex.example_in_context ? `<div style="font-size:12px; font-style:italic; margin-top:4px;">e.g. ${ex.example_in_context}</div>` : ''}
+      </div>
+    `).join('');
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">✍️ COACH REVIEW</div>
+      <div class="why-card">
+        <div class="why-label">📝 OVERALL</div>
+        <div class="why-text">${entry.overall || ''}</div>
+      </div>
+      <div class="label">YOUR ORIGINAL</div>
+      <div style="background:#f6f6f6; border-radius:10px; padding:10px; font-size:13px; font-weight:700; line-height:1.6;">${entry.rawText.replace(/</g,'&lt;')}</div>
+      <div class="label" style="margin-top:14px;">REFINED VERSION ✨</div>
+      <div style="background:linear-gradient(135deg,#ebffe0,#d4f0c0); border:2px solid var(--success); border-radius:10px; padding:10px; font-size:13px; font-weight:800; line-height:1.6;">${(entry.refined||'').replace(/</g,'&lt;')}</div>
+      ${issuesHtml ? `<div class="label" style="margin-top:14px;">ISSUES (${(entry.issues||[]).length})</div>${issuesHtml}` : ''}
+      ${extractHtml ? `<div class="label" style="margin-top:14px;">📚 ADDED TO VOCAB (${(entry.extract||[]).length})</div>${extractHtml}` : ''}
+      <button class="btn-primary btn-pink" onclick="App.openModule('writing-review')">✍️ WRITE ANOTHER</button>
+      <button class="btn-secondary" onclick="App.openModule('output-archive')">📓 SEE ALL OUTPUTS</button>
+      <button class="btn-secondary" onclick="App.openModule('vocab-list')">📚 OPEN VOCAB</button>
+    `;
+  },
+
+  // =====================================================
+  // v17 📓 OUTPUT ARCHIVE — List/Calendar
+  // =====================================================
+  outputArchive(view) {
+    const v = view || Storage.get('archiveView', 'list');
+    Storage.set('archiveView', v);
+    const all = OutputHistory.all();
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">📓 OUTPUT ARCHIVE · ${all.length}</div>
+      <div class="btn-row" style="margin-bottom:10px;">
+        <button class="speed-btn ${v==='list'?'active':''}" onclick="Modules.outputArchive('list')">📋 LIST</button>
+        <button class="speed-btn ${v==='calendar'?'active':''}" onclick="Modules.outputArchive('calendar')">📅 CALENDAR</button>
+      </div>
+      <div id="archiveBody"></div>
+      <button class="btn-secondary" onclick="App.openModule('writing-review')" style="margin-top:10px;">✍️ NEW OUTPUT</button>
+    `;
+    if (v === 'list') this.outputArchiveList();
+    else this.outputArchiveCalendar();
+  },
+
+  outputArchiveList() {
+    const list = OutputHistory.all();
+    const body = document.getElementById('archiveBody');
+    if (!body) return;
+    if (list.length === 0) {
+      body.innerHTML = `<div style="text-align:center; padding:30px 10px; color:var(--text-soft); font-weight:800;">まだ出力がありません。Writing ReviewやRealtimeで話してみよう。</div>`;
+      return;
+    }
+    const sourceIcon = { writing:'✍️', realtime:'⚡', livetalk:'🎙️', composition:'📝' };
+    body.innerHTML = list.map(o => {
+      const d = new Date(o.timestamp);
+      const dateStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
+      const preview = (o.rawText || '').slice(0, 80);
+      return `
+        <div onclick="Modules.outputDetail('${o.id}')" style="background:var(--card); border:2px solid var(--line); border-bottom-width:3px; border-radius:12px; padding:10px 12px; margin-bottom:8px; cursor:pointer;">
+          <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900; color:var(--text-soft);">
+            <span>${sourceIcon[o.source]||'•'} ${(o.source||'').toUpperCase()}</span>
+            <span>${dateStr}</span>
+          </div>
+          <div style="font-size:13px; font-weight:800; margin-top:6px; line-height:1.5;">${preview}${o.rawText.length>80?'...':''}</div>
+          <div style="font-size:11px; color:var(--info); font-weight:800; margin-top:4px;">📚 ${(o.extract||[]).length} phrases extracted · ${(o.issues||[]).length} issues</div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  outputArchiveCalendar() {
+    const grouped = OutputHistory.groupByDate();
+    const body = document.getElementById('archiveBody');
+    if (!body) return;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startWday = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+    const monthName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month];
+    let html = `<div style="text-align:center; font-size:14px; font-weight:900; margin-bottom:8px;">${monthName} ${year}</div>`;
+    html += `<div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; font-size:10px; font-weight:900; color:var(--text-soft); text-align:center; margin-bottom:4px;">
+      ${['S','M','T','W','T','F','S'].map(d=>`<div>${d}</div>`).join('')}
+    </div>`;
+    html += `<div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px;">`;
+    for (let i = 0; i < startWday; i++) html += `<div></div>`;
+    for (let d = 1; d <= totalDays; d++) {
+      const key = `${year}-${(month+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+      const items = grouped[key] || [];
+      const intensity = Math.min(items.length, 4);
+      const bgColors = ['#f0f0f0', '#ffe9c8', '#ffd089', '#ff9b3d', '#ff6f00'];
+      const isToday = d === now.getDate();
+      html += `<div onclick="Modules.outputCalendarDay('${key}')" style="background:${bgColors[intensity]}; border:${isToday?'2px solid var(--accent)':'1px solid var(--line)'}; border-radius:8px; padding:6px 4px; text-align:center; cursor:pointer; min-height:40px;">
+        <div style="font-size:11px; font-weight:900; color:${intensity>=2?'#fff':'var(--text)'};">${d}</div>
+        ${items.length ? `<div style="font-size:10px; font-weight:900; color:${intensity>=2?'#fff':'var(--accent-dark)'};">●${items.length}</div>` : ''}
+      </div>`;
+    }
+    html += `</div>`;
+    body.innerHTML = html;
+  },
+
+  outputCalendarDay(dateKey) {
+    const grouped = OutputHistory.groupByDate();
+    const items = grouped[dateKey] || [];
+    if (items.length === 0) { App.toast('No outputs on this day'); return; }
+    const sourceIcon = { writing:'✍️', realtime:'⚡', livetalk:'🎙️', composition:'📝' };
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-title">📅 ${dateKey} · ${items.length}</div>
+      ${items.map(o => `
+        <div onclick="Modules.outputDetail('${o.id}')" style="background:var(--card); border:2px solid var(--line); border-bottom-width:3px; border-radius:12px; padding:10px 12px; margin-bottom:8px; cursor:pointer;">
+          <div style="font-size:11px; font-weight:900; color:var(--text-soft);">${sourceIcon[o.source]||'•'} ${(o.source||'').toUpperCase()}</div>
+          <div style="font-size:13px; font-weight:800; margin-top:6px; line-height:1.5;">${(o.rawText||'').slice(0,100)}${o.rawText.length>100?'...':''}</div>
+        </div>
+      `).join('')}
+      <button class="btn-secondary" onclick="App.openModule('output-archive')">← BACK</button>
+    `;
+  },
+
+  outputDetail(id) {
+    const entry = OutputHistory.get(id);
+    if (!entry) { App.toast('Not found'); return; }
+    this.writingReviewRender(entry);
+    // 戻り先を上書き
+    setTimeout(() => {
+      const back = document.querySelector('button.btn-secondary[onclick*="output-archive"]');
+      if (back) back.textContent = '← BACK TO ARCHIVE';
+    }, 50);
+  },
+
+  // =====================================================
+  // v17 🔥 MUST-USE PHRASES — ホーム上部に出す6個
+  // =====================================================
+  renderMustUsePanel(containerId) {
+    const c = document.getElementById(containerId);
+    if (!c || typeof MustUse === 'undefined') return;
+    const list = MustUse.list();
+    if (list.length === 0) { c.innerHTML = ''; return; }
+    c.innerHTML = `
+      <div class="section-title">TODAY'S MUST-USE PHRASES</div>
+      <div style="background:linear-gradient(135deg,#fff5e6,#ffe4b8); border:2px solid var(--accent); border-bottom-width:3px; border-radius:14px; padding:12px;">
+        <div style="font-size:11px; font-weight:900; color:var(--accent-dark); letter-spacing:1px; margin-bottom:8px;">⚡ FORCED REUSE · 今日この6個を会話で必ず使う</div>
+        ${list.map((v, i) => `
+          <div onclick="App.openModule('vocab-detail','${v.id}')" style="background:#fff; border:2px solid var(--line); border-radius:10px; padding:8px 10px; margin-bottom:6px; cursor:pointer;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="font-size:13px; font-weight:900;">${i+1}. ${v.en}</div>
+              ${v.forcedUseCount > 0 ? `<div style="font-size:10px; font-weight:900; color:var(--danger); background:#ffe0e0; padding:2px 6px; border-radius:6px;">未使用 ${v.forcedUseCount}回</div>` : ''}
+            </div>
+            ${v.jp ? `<div style="font-size:11px; color:var(--text-soft); font-weight:700; margin-top:2px;">${v.jp}</div>` : ''}
+          </div>
+        `).join('')}
+        <div style="display:flex; gap:6px; margin-top:8px;">
+          <button class="btn-secondary" style="flex:1;" onclick="App.openModule('realtime')">🎙 USE IN REALTIME</button>
+          <button class="btn-secondary" style="flex:1;" onclick="App.openModule('writing-review')">✍️ USE IN WRITING</button>
+        </div>
+      </div>
+    `;
+  },
+
+  // ホーム最新アウトプット要約
+  renderLatestOutput(containerId) {
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    const all = OutputHistory.all();
+    if (all.length === 0) { c.innerHTML = ''; return; }
+    const latest = all[0];
+    const d = new Date(latest.timestamp);
+    const ago = Math.floor((Date.now() - d.getTime()) / 60000);
+    const timeStr = ago < 60 ? `${ago}分前` : ago < 1440 ? `${Math.floor(ago/60)}時間前` : `${Math.floor(ago/1440)}日前`;
+    c.innerHTML = `
+      <div class="section-title">LATEST OUTPUT</div>
+      <div onclick="Modules.outputDetail('${latest.id}')" style="background:var(--card); border:2px solid var(--line); border-bottom-width:3px; border-radius:14px; padding:12px; cursor:pointer;">
+        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900; color:var(--text-soft);">
+          <span>${latest.source.toUpperCase()}</span><span>${timeStr}</span>
+        </div>
+        <div style="font-size:12px; font-weight:800; margin-top:6px; line-height:1.5; color:var(--text);">"${(latest.rawText||'').slice(0,100)}${latest.rawText.length>100?'...':''}"</div>
+        <div style="font-size:12px; font-weight:800; color:var(--success-dark); margin-top:6px; line-height:1.5;">${(latest.overall||'').slice(0,120)}</div>
+        <div style="font-size:11px; color:var(--info); font-weight:800; margin-top:6px;">📚 ${(latest.extract||[]).length} phrases · ${(latest.issues||[]).length} fixes</div>
+      </div>
+    `;
   }
 };
+
+// =====================================================
+// v17 Realtime end hook — 既存 realtimeEnd を拡張
+// (modules.js 読み込み後にラップ)
+// =====================================================
+(function wrapRealtimeEnd() {
+  if (typeof Modules === 'undefined' || !Modules.realtimeEnd) return;
+  const originalEnd = Modules.realtimeEnd.bind(Modules);
+  Modules.realtimeEnd = function() {
+    // 終了前に transcript を抽出
+    const area = document.getElementById('realtimeChatArea');
+    let userTranscript = '';
+    if (area) {
+      area.querySelectorAll('.chat-user').forEach(el => {
+        userTranscript += (el.textContent || '') + '\n';
+      });
+    }
+    userTranscript = userTranscript.trim();
+    // 元の終了処理
+    originalEnd();
+    // ユーザー発話があればレビューしてOutputHistoryに保存
+    if (userTranscript && userTranscript.length > 10 && Storage.hasApiKey()) {
+      // 使用検知 (Must-Use phrases自動更新)
+      try {
+        const det = MustUse.applyUsageDetection(userTranscript);
+        if (det.used.length > 0) {
+          App.toast(`✓ ${det.used.length} must-use phrase${det.used.length>1?'s':''} used!`, 'xp');
+        }
+      } catch (e) { console.warn('usage detect:', e); }
+
+      const areaEl = document.getElementById('realtimeChatArea');
+      if (areaEl) {
+        const note = document.createElement('div');
+        note.className = 'chat-msg chat-coach pop-in';
+        note.innerHTML = '🤖 Coach is reviewing your session...';
+        areaEl.appendChild(note);
+      }
+      reviewOutput(userTranscript, 'realtime').then(({ entry }) => {
+        Storage.recordEvent('output_review');
+        Storage.addXP(20);
+        if (areaEl) {
+          areaEl.innerHTML += `
+            <div class="chat-msg chat-coach pop-in" style="background:linear-gradient(135deg,#ebffe0,#d4f0c0); border-color:var(--success);">
+              <div style="font-size:11px; font-weight:900; color:var(--success-dark); letter-spacing:1px;">✅ COACH REVIEW READY</div>
+              <div style="font-size:12px; font-weight:800; margin-top:4px;">${entry.overall || ''}</div>
+              <div style="font-size:11px; color:var(--info); font-weight:800; margin-top:4px;">📚 ${(entry.extract||[]).length} phrases added · ${(entry.issues||[]).length} fixes</div>
+              <button class="btn-primary btn-pink" style="margin-top:8px;" onclick="Modules.outputDetail('${entry.id}')">SEE FULL REVIEW</button>
+            </div>
+          `;
+        }
+      }).catch(e => {
+        console.warn('Realtime review error:', e);
+        if (areaEl) {
+          areaEl.innerHTML += `<div class="chat-msg chat-coach" style="color:var(--danger);">Review failed: ${e.message}</div>`;
+        }
+      });
+    }
+  };
+
+  // ===== Realtime プロンプトに Must-Use フレーズを注入 =====
+  const originalRealtimeStart = Modules.realtimeStart.bind(Modules);
+  Modules.realtimeStart = async function(scenarioKey) {
+    // 一時的に prompts を上書き（注入）
+    const origPrompts = Modules.liveTalkPrompts.bind(Modules);
+    Modules.liveTalkPrompts = function() {
+      const p = origPrompts();
+      const inj = MustUse.promptInjection();
+      if (inj) {
+        Object.keys(p).forEach(k => { p[k] = p[k] + inj; });
+      }
+      return p;
+    };
+    try {
+      return await originalRealtimeStart(scenarioKey);
+    } finally {
+      Modules.liveTalkPrompts = origPrompts;
+    }
+  };
+
+  // ===== Composition prompt にも Must-Use 注入 =====
+  if (Modules.compositionStart) {
+    const origCompStart = Modules.compositionStart.bind(Modules);
+    Modules.compositionStart = function() {
+      origCompStart();
+      // hint に追加
+      if (Modules.compositionState && Modules.compositionState.prompt) {
+        const list = MustUse.list();
+        if (list.length > 0) {
+          const phrases = list.map(v => v.en).slice(0, 6).join(' · ');
+          Modules.compositionState.mustUse = list;
+          Modules.compositionState.prompt = Object.assign({}, Modules.compositionState.prompt);
+          const orig = Modules.compositionState.prompt.hint || '';
+          Modules.compositionState.prompt.hint = orig + (orig ? ' · ' : '') + `今日のMust-Use: ${phrases}`;
+          Modules.compositionRender();
+        }
+      }
+    };
+  }
+
+  // ===== Composition submit にも使用検知を追加 =====
+  if (Modules.compositionSubmit) {
+    const origCompSubmit = Modules.compositionSubmit.bind(Modules);
+    Modules.compositionSubmit = async function() {
+      const inputEl = document.getElementById('compInput');
+      const text = inputEl ? inputEl.value.trim() : '';
+      const result = await origCompSubmit();
+      if (text && Modules.compositionState && Modules.compositionState.mustUse) {
+        try {
+          const det = MustUse.applyUsageDetection(text);
+          if (det.used.length > 0) {
+            App.toast(`✓ ${det.used.length} must-use used!`, 'xp');
+          }
+        } catch (e) { console.warn(e); }
+      }
+      return result;
+    };
+  }
+})();

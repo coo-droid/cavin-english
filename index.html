@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#fff8ee">
 <title>CAVIN English</title>
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23fff8ee'/%3E%3Ctext x='90' y='130' font-size='110' text-anchor='middle'%3E🌸%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css?v=16">
+<link rel="stylesheet" href="style.css?v=17">
 </head>
 <body>
 
@@ -57,14 +57,30 @@
 
   <div id="micWarning" style="display:none;"></div>
 
-  <button class="daily-flow-cta realtime-cta" onclick="App.openModule('realtime')">
-    <div class="dfc-icon">⚡</div>
+  <!-- v17: Latest Output 要約 -->
+  <div id="latestOutputPanel"></div>
+
+  <!-- v17: Primary CTAs — Output Loop が中心 -->
+  <button class="daily-flow-cta" style="background:linear-gradient(135deg,#ff8aa8,#ff6f91); color:#fff;" onclick="App.openModule('writing-review')">
+    <div class="dfc-icon">✍️</div>
     <div class="dfc-text">
-      <div class="dfc-title">Talk With AI Now</div>
-      <div class="dfc-sub">gpt-realtime-2 · 電話レベルの英会話</div>
+      <div class="dfc-title">Write Something</div>
+      <div class="dfc-sub">あなたの言葉 → AIレビュー → 語彙化</div>
     </div>
     <div class="dfc-arrow">▶</div>
   </button>
+
+  <button class="daily-flow-cta realtime-cta" onclick="App.openModule('realtime')">
+    <div class="dfc-icon">🎙</div>
+    <div class="dfc-text">
+      <div class="dfc-title">Realtime Talk</div>
+      <div class="dfc-sub">話す → 自動レビュー → Must-Use検知</div>
+    </div>
+    <div class="dfc-arrow">▶</div>
+  </button>
+
+  <!-- v17: Must-Use Phrases 6 -->
+  <div id="mustUsePanel"></div>
 
   <button class="daily-flow-cta" onclick="App.openModule('coach-plan')">
     <div class="dfc-icon">🌟</div>
@@ -83,38 +99,63 @@
     <button class="story-btn" onclick="App.openModule('story-mode')">START</button>
   </div>
 
-  <!-- 中核機能のみホームに -->
-  <div class="section-title">CORE PRACTICE</div>
+  <!-- Continue Practice -->
+  <div class="section-title">CONTINUE PRACTICE</div>
   <div class="menu-grid">
-    <button class="menu-item tile-pink" onclick="App.openModule('realtime')">
-      <div class="menu-icon">⚡</div>
-      <div class="menu-name">Realtime Voice</div>
-      <div class="menu-desc">Phone-like AI talk</div>
+    <button class="menu-item tile-pink" onclick="App.openModule('writing-review')">
+      <div class="menu-icon">✍️</div>
+      <div class="menu-name">Writing Review</div>
+      <div class="menu-desc">Type → AI review</div>
     </button>
-    <button class="menu-item tile-purple" onclick="App.openModule('live-talk')">
+    <button class="menu-item tile-purple" onclick="App.openModule('realtime')">
+      <div class="menu-icon">⚡</div>
+      <div class="menu-name">Realtime</div>
+      <div class="menu-desc">Auto-reviewed talk</div>
+    </button>
+    <button class="menu-item tile-blue" onclick="App.openModule('live-talk')">
       <div class="menu-icon">🎙️</div>
       <div class="menu-name">Live Talk</div>
       <div class="menu-desc">Hold-to-talk</div>
     </button>
-    <button class="menu-item tile-blue" onclick="App.openModule('composition')">
-      <div class="menu-icon">✍️</div>
+    <button class="menu-item tile-yellow" onclick="App.openModule('composition')">
+      <div class="menu-icon">📝</div>
       <div class="menu-name">Composition</div>
-      <div class="menu-desc">Write & improve</div>
+      <div class="menu-desc">Prompts + must-use</div>
     </button>
-    <button class="menu-item tile-yellow" onclick="App.openModule('weakness-drill')">
-      <div class="menu-icon">🎯</div>
-      <div class="menu-name">Weakness Drill</div>
-      <div class="menu-desc">Your weak spots</div>
+    <button class="menu-item tile-orange" onclick="App.openModule('vocab-list')">
+      <div class="menu-icon">📚</div>
+      <div class="menu-name">Vocabulary</div>
+      <div class="menu-desc">Forgetting curve</div>
     </button>
     <button class="menu-item tile-green" onclick="App.openModule('shadowing-hub')">
       <div class="menu-icon">🎬</div>
       <div class="menu-name">Shadowing</div>
       <div class="menu-desc">Mouth memory</div>
     </button>
-    <button class="menu-item tile-orange" onclick="App.openModule('vocab-list')">
-      <div class="menu-icon">📚</div>
-      <div class="menu-name">Vocabulary</div>
-      <div class="menu-desc">Forgetting curve</div>
+  </div>
+
+  <!-- Library -->
+  <div class="section-title">LIBRARY</div>
+  <div class="menu-grid">
+    <button class="menu-item tile-pink" onclick="App.openModule('output-archive')">
+      <div class="menu-icon">📓</div>
+      <div class="menu-name">Past Outputs</div>
+      <div class="menu-desc">List + Calendar</div>
+    </button>
+    <button class="menu-item tile-green" onclick="App.openModule('shadowing-hub')">
+      <div class="menu-icon">🎙️</div>
+      <div class="menu-name">SHADOW Bank</div>
+      <div class="menu-desc">Audio drills</div>
+    </button>
+    <button class="menu-item tile-blue" onclick="App.openModule('scenes')">
+      <div class="menu-icon">🎭</div>
+      <div class="menu-name">Scenes</div>
+      <div class="menu-desc">Meeting / Meal</div>
+    </button>
+    <button class="menu-item tile-orange" onclick="App.openModule('flash-random')">
+      <div class="menu-icon">🃏</div>
+      <div class="menu-name">Flash</div>
+      <div class="menu-desc">28-card drill</div>
     </button>
   </div>
 
@@ -136,12 +177,13 @@
   </div>
 </div>
 
-<script src="data.js?v=16"></script>
-<script src="storage.js?v=16"></script>
-<script src="speech.js?v=16"></script>
-<script src="vocab.js?v=16"></script>
-<script src="shadowing.js?v=16"></script>
-<script src="modules.js?v=16"></script>
-<script src="app.js?v=16"></script>
+<script src="data.js?v=17"></script>
+<script src="storage.js?v=17"></script>
+<script src="speech.js?v=17"></script>
+<script src="vocab.js?v=17"></script>
+<script src="output.js?v=17"></script>
+<script src="shadowing.js?v=17"></script>
+<script src="modules.js?v=17"></script>
+<script src="app.js?v=17"></script>
 </body>
 </html>
