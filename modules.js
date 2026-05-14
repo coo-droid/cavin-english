@@ -3353,32 +3353,115 @@ ${totalDoneDays >= 6 ? '🔥 Iron week! You showed up.' :
   },
 
   // =====================================================
-  // v17 ✍️ WRITING REVIEW — テキスト → AIレビュー → Vocab自動登録
+  // v17.1 ✍️ WRITING REVIEW — ハイブリッド: お題ピッカー + 自由記述
   // =====================================================
-  writingReview() {
+  writingReview(presetCategory) {
     const draft = Storage.get('wr_draft', '');
+    const cat = presetCategory || Storage.get('wr_category', 'client'); // 'client' | 'daily' | 'free'
+    Storage.set('wr_category', cat);
+
+    let promptsHtml = '';
+    let firstPromptTitle = null;
+    if (cat !== 'free' && typeof WRITING_PROMPTS !== 'undefined') {
+      const pool = WRITING_PROMPTS.filter(p => p.category === cat);
+      const recent = Storage.get('wr_recent', []);
+      const fresh = pool.filter(p => !recent.includes(p.title));
+      const candidates = fresh.length >= 3 ? fresh : pool;
+      // 表示用のスナップショット（カテゴリ切替時のみ作り直す）
+      let snapshot = Storage.get('wr_snapshot_' + cat, null);
+      const snapAge = Storage.get('wr_snapshot_at_' + cat, 0);
+      const fresh4h = (Date.now() - snapAge) < 4 * 60 * 60 * 1000;
+      if (!snapshot || !fresh4h) {
+        snapshot = candidates.slice().sort(() => Math.random() - 0.5).slice(0, 3).map(p => p.title);
+        Storage.set('wr_snapshot_' + cat, snapshot);
+        Storage.set('wr_snapshot_at_' + cat, Date.now());
+      }
+      const picks = snapshot.map(t => pool.find(p => p.title === t)).filter(Boolean);
+      firstPromptTitle = picks[0] ? picks[0].title : null;
+      const activeTitle = Storage.get('wr_active_prompt', firstPromptTitle);
+
+      promptsHtml = `
+        <div class="label">PICK A SITUATION (or use Free Write)</div>
+        ${picks.map(p => `
+          <div onclick="Modules.writingReviewPickPrompt(${JSON.stringify(p.title).replace(/"/g,'&quot;')})"
+               style="background:${p.title === activeTitle ? 'linear-gradient(135deg,#fff5e6,#ffe4b8)' : 'var(--card)'};
+                      border:2px solid ${p.title === activeTitle ? 'var(--accent)' : 'var(--line)'};
+                      border-bottom-width:3px; border-radius:12px; padding:10px 12px; margin-bottom:8px; cursor:pointer;">
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span style="font-size:20px;">${p.icon}</span>
+              <span style="font-size:13px; font-weight:900; flex:1;">${p.title}</span>
+              ${p.title === activeTitle ? '<span style="font-size:10px; font-weight:900; color:var(--accent-dark);">✓</span>' : ''}
+            </div>
+            <div style="font-size:12px; font-weight:700; color:var(--text); margin-top:6px; line-height:1.5;">${p.situation}</div>
+            <div style="font-size:11px; font-weight:700; color:var(--text-soft); margin-top:4px;">💡 ${p.hint}</div>
+          </div>
+        `).join('')}
+        <div class="btn-row" style="margin-bottom:10px;">
+          <button class="btn-secondary" onclick="Modules.writingReviewShuffle()">🎲 SHUFFLE</button>
+        </div>
+      `;
+    } else {
+      promptsHtml = `
+        <div style="background:linear-gradient(135deg,#f0f8ff,#e0f0ff); border:2px solid var(--info); border-radius:12px; padding:10px 12px; margin-bottom:10px;">
+          <div style="font-size:12px; font-weight:900; color:var(--info); letter-spacing:1px;">📝 FREE WRITE MODE</div>
+          <div style="font-size:12px; font-weight:700; margin-top:4px;">なんでも書いてOK。今日の気分、メール下書き、頭の整理 — AIがCAVIN/咲品の文脈で添削します。</div>
+        </div>
+      `;
+    }
+
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-title">✍️ WRITING REVIEW</div>
       <div class="why-card">
         <div class="why-label">🎯 OUTPUT LOOP</div>
-        <div class="why-text">あなたの言いたいことを英語で書く → AIコーチがレビュー → イケてる版+使えるフレーズが自動で語彙帳に入る → 後日強制再利用。</div>
-        <div class="why-impact">→ 教材消化型から「自分の言葉を磨く」型へ</div>
+        <div class="why-text">あなたの言葉 → AIレビュー → 語彙化 → 強制再利用。CAVIN/咲品の文脈を踏まえて添削。</div>
       </div>
-      <div class="label">YOUR ENGLISH (なんでもOK・メール・トーク・想定発話)</div>
-      <textarea id="wrInput" rows="8" placeholder="Type or paste your English here. Even rough is fine — that's the point.">${draft || ''}</textarea>
+
+      <div class="btn-row-3" style="margin-bottom:12px;">
+        <button class="speed-btn ${cat==='client'?'active':''}" onclick="Modules.writingReview('client')">💼 CLIENT</button>
+        <button class="speed-btn ${cat==='daily'?'active':''}" onclick="Modules.writingReview('daily')">☕ DAILY</button>
+        <button class="speed-btn ${cat==='free'?'active':''}" onclick="Modules.writingReview('free')">📝 FREE</button>
+      </div>
+
+      ${promptsHtml}
+
+      <div class="label">YOUR ENGLISH</div>
+      <textarea id="wrInput" rows="7" placeholder="${cat === 'free' ? 'Type anything in English — rough is fine.' : '選んだ状況に対する英語をここに。下手でいい、コーチが磨きます。'}">${draft || ''}</textarea>
       <div class="btn-row">
         <button class="btn-secondary" onclick="Modules.writingReviewVoice()">🎙️ SPEAK INSTEAD</button>
         <button class="btn-secondary" onclick="document.getElementById('wrInput').value=''; Storage.set('wr_draft','');">🗑 CLEAR</button>
       </div>
       <button class="btn-primary btn-pink" onclick="Modules.writingReviewSubmit()">🤖 GET AI REVIEW</button>
       <div id="wrResult"></div>
-      <button class="btn-secondary" onclick="App.openModule('output-archive')" style="margin-top:10px;">📓 PAST OUTPUTS ARCHIVE</button>
+      <button class="btn-secondary" onclick="App.openModule('output-archive')" style="margin-top:10px;">📓 PAST OUTPUTS</button>
     `;
-    // ドラフト自動保存
+
+    // 初回は最初のお題をアクティブに
+    if (cat !== 'free' && firstPromptTitle && !Storage.get('wr_active_prompt', null)) {
+      Storage.set('wr_active_prompt', firstPromptTitle);
+    }
+
     setTimeout(() => {
       const ta = document.getElementById('wrInput');
       if (ta) ta.addEventListener('input', () => Storage.set('wr_draft', ta.value));
     }, 100);
+  },
+
+  writingReviewPickPrompt(title) {
+    Storage.set('wr_active_prompt', title);
+    this.writingReview();
+  },
+
+  writingReviewShuffle() {
+    // 現在表示中のお題を recent に追加して、次は別を引く
+    const cat = Storage.get('wr_category', 'client');
+    const snap = Storage.get('wr_snapshot_' + cat, []);
+    const recent = Storage.get('wr_recent', []);
+    snap.forEach(t => { if (!recent.includes(t)) recent.push(t); });
+    Storage.set('wr_recent', recent.slice(-12));
+    Storage.set('wr_snapshot_' + cat, null);
+    Storage.set('wr_snapshot_at_' + cat, 0);
+    Storage.set('wr_active_prompt', null);
+    this.writingReview();
   },
 
   async writingReviewVoice() {
@@ -3438,7 +3521,19 @@ ${totalDoneDays >= 6 ? '🔥 Iron week! You showed up.' :
       </div>
     `;
     try {
-      const { entry } = await reviewOutput(text, 'writing');
+      // 状況コンテキストを抽出
+      const cat = Storage.get('wr_category', 'client');
+      let situation = null;
+      if (cat !== 'free' && typeof WRITING_PROMPTS !== 'undefined') {
+        const activeTitle = Storage.get('wr_active_prompt', null);
+        const p = WRITING_PROMPTS.find(x => x.title === activeTitle);
+        if (p) situation = { title: p.title, situation: p.situation, hint: p.hint, category: cat };
+      }
+      const context = {
+        category: cat,
+        situation
+      };
+      const { entry } = await reviewOutput(text, 'writing', context);
       Storage.set('wr_draft', '');
       Storage.recordEvent('writing_review');
       Storage.addXP(15);

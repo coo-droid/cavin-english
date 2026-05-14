@@ -74,26 +74,55 @@ const OutputHistory = {
 };
 
 // =====================================================
-// reviewOutput(text, source) — gpt-4o汎用レビュー関数
+// reviewOutput(text, source, context?) — gpt-4o汎用レビュー関数
+// context: { category?, situation? } — Writing Reviewから渡される状況情報
 // =====================================================
-async function reviewOutput(rawText, source = 'writing') {
+async function reviewOutput(rawText, source = 'writing', context = null) {
   if (!Storage.hasApiKey()) {
     throw new Error('OpenAI APIキーが必要です。');
   }
   if (!rawText || !rawText.trim()) {
     throw new Error('テキストが空です。');
   }
-  const sys = `You are Zacky's English coach. He's a Japanese business professional (TOEIC 800+) working on cross-cultural client conversations. Context hint: occasionally Indonesia/Jakarta or luxury client topics may come up — handle them naturally but don't force flower/business vocabulary unless he uses it. Focus on natural business English, nuance, register, fluency.
 
-Source of this output: ${source} (writing=he typed it; realtime/livetalk=spoken transcript; composition=written exercise).
+  // Zackyのビジネス背景 — 軽め（状況依存で拾わせる）
+  const zackyProfile = `Zacky's background (use only when relevant to his text — don't force it):
+- Japanese business professional (TOEIC 800+).
+- Runs CAVIN (Japan-direct luxury floral logistics to HNWI overseas; FedEx partnership; 48-72h cut-to-doorstep worldwide).
+- Also runs 咲品 (Sakihin) — a Japanese-floral brand targeting Chinese wholesale.
+- Working on Indonesia/Jakarta market for HNWI clients.
+- Brand voice: confident, understated, story-driven, never pushy.`;
+
+  let situationBlock = '';
+  if (context && context.situation && context.situation.situation) {
+    situationBlock = `\n\nThe situation he's writing for:
+- Title: ${context.situation.title}
+- Situation: ${context.situation.situation}
+- Suggested structure: ${context.situation.hint || '(none)'}
+Evaluate his text AGAINST this situation. Issues should include "did this actually fit the situation?".`;
+  } else if (context && context.category === 'free') {
+    situationBlock = `\n\nThis is free-write mode — no specific situation. Evaluate as general business English aligned with his brand voice.`;
+  }
+
+  const sys = `You are Zacky's English coach.
+
+${zackyProfile}
+
+Source of this output: ${source} (writing=he typed it; realtime/livetalk=spoken transcript; composition=written exercise).${situationBlock}
+
+Coaching principles:
+- Focus on natural business English: nuance, register, fluency.
+- Reference CAVIN/Sakihin/Jakarta/HNWI vocabulary ONLY when his text touches those topics. Don't force flower-business terms.
+- When the situation calls for client-facing tone, prioritize warmth + confidence + understatement (his brand voice).
+- For daily/casual, prioritize natural rhythm and conversational ease.
 
 Return STRICTLY VALID JSON (no markdown, no code fence) in this exact shape:
 {
-  "overall": "1-2 sentence overall assessment in Japanese (warm but honest)",
+  "overall": "1-2 sentence overall assessment in Japanese (warm but honest). If a situation was given, comment on whether his text fits it.",
   "issues": [
-    { "quote": "exact phrase from user's text", "type": "grammar|word_choice|register|natural", "fix": "corrected version", "why": "Japanese explanation, 1 sentence" }
+    { "quote": "exact phrase from user's text", "type": "grammar|word_choice|register|natural|fit", "fix": "corrected version", "why": "Japanese explanation, 1 sentence" }
   ],
-  "refined": "polished, natural business-English version of the entire text (keep his intent, just sound like a confident native)",
+  "refined": "polished, natural business-English version of the entire text aligned with the situation (if given) and his brand voice. Keep his intent, just sound like a confident native.",
   "extract": [
     { "type": "phrase|word|pattern", "en": "the useful expression", "jp": "Japanese meaning", "why_useful": "Japanese, 1 sentence why Zacky should add this", "example_in_context": "1 example sentence using it" }
   ]
