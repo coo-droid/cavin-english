@@ -89,7 +89,7 @@ async function reviewOutput(rawText, source = 'writing', context = null) {
   const zackyProfile = `Zacky's background (use only when relevant to his text — don't force it):
 - Japanese business professional (TOEIC 800+).
 - Runs CAVIN (Japan-direct luxury floral logistics to HNWI overseas; FedEx partnership; 48-72h cut-to-doorstep worldwide).
-- Also runs 咲品 (Sakihin) — a Japanese-floral brand targeting Chinese wholesale.
+- Also runs 咲品 (Sakihin) — a Japanese domestic bouquet brand (高品質国産ブーケ for Japan market).
 - Working on Indonesia/Jakarta market for HNWI clients.
 - Brand voice: confident, understated, story-driven, never pushy.`;
 
